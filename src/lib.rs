@@ -1,1 +1,2 @@
-pub mod scopedmap;
+pub mod datastructures;
+pub mod tex;

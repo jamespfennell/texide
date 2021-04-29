@@ -10,7 +10,7 @@ use std::rc::Rc;
 /// The map methods are the same as the standard hash map (although only a few methods are
 /// implemented).
 /// ```
-/// # use texide::scopedmap::ScopedMap;
+/// # use texide::datastructures::scopedmap::ScopedMap;
 /// let mut cat_colors = ScopedMap::new();
 /// cat_colors.insert("mint", "ginger");
 /// assert_eq!(cat_colors.get(&"mint"), Some(&"ginger"));
@@ -19,7 +19,7 @@ use std::rc::Rc;
 /// behavior: when a scope is ended, all mutations to the map since the beginning of the scope are
 /// rolled back.
 /// ```
-/// # use texide::scopedmap::ScopedMap;
+/// # use texide::datastructures::scopedmap::ScopedMap;
 /// let mut cat_colors = ScopedMap::new();
 ///
 /// // Insert a new value, update the value in a new scope, and then end the scope to roll back
@@ -42,14 +42,14 @@ use std::rc::Rc;
 /// otherwise. It is generally an error to end a scope that hasn't been started, so the method is
 /// annoted with `#[must_use]`.
 /// ```
-/// # use texide::scopedmap::ScopedMap;
+/// # use texide::datastructures::scopedmap::ScopedMap;
 /// let mut cat_colors = ScopedMap::<String, String>::new();
 /// assert_eq!(cat_colors.end_scope(), false);
 /// ```
 /// There is also a "global" variant of the `insert` method. It inserts the value at the global
 /// scope, and erases all other values.
 /// ```
-/// # use texide::scopedmap::ScopedMap;
+/// # use texide::datastructures::scopedmap::ScopedMap;
 /// let mut cat_colors = ScopedMap::new();
 /// cat_colors.insert("paganini", "black");
 /// cat_colors.begin_scope();
@@ -134,6 +134,8 @@ impl<K: Eq + Hash, V> ScopedMap<K, V> {
         self.key_to_value_stack.insert(Rc::new(key), new_stack);
     }
 
+    // TODO: specialize this for copiable values? What does HashMap do?
+    // TODO: get_or_default
     /// Retrieves the value at the provided key.
     pub fn get(&self, key: &K) -> Option<&V> {
         match self.key_to_value_stack.get(key) {
@@ -176,6 +178,23 @@ impl<K: Eq + Hash, V> ScopedMap<K, V> {
         }
     }
 
+    /// Extends the `ScopedMap` with (key, value) pairs.
+    /// ```
+    /// # use texide::datastructures::scopedmap::ScopedMap;
+    /// let mut cat_colors = ScopedMap::new();
+    /// cat_colors.extend(std::array::IntoIter::new([
+    ///    ("paganini", "black"),
+    ///    ("mint", "ginger"),
+    /// ]));
+    /// assert_eq!(cat_colors.get(&"paganini"), Some(&"black"));
+    /// assert_eq!(cat_colors.get(&"mint"), Some(&"ginger"));
+    /// ```
+    pub fn extend<T: IntoIterator<Item = (K, V)>>(&mut self, iter: T) {
+        for (key, val) in iter {
+            self.insert(key, val);
+        }
+    }
+
     /// Returns a new empty `ScopedMap`.
     pub fn new() -> ScopedMap<K, V> {
         return ScopedMap {
@@ -183,11 +202,27 @@ impl<K: Eq + Hash, V> ScopedMap<K, V> {
             changed_keys_stack: Vec::<HashSet<Rc<K>>>::new(),
         };
     }
+
+    /// Returns a new `ScopedMap` pre-populated with the provided key, values pairs
+    /// ```
+    /// # use texide::datastructures::scopedmap::ScopedMap;
+    /// let mut cat_colors = ScopedMap::from_iter(std::array::IntoIter::new([
+    ///    ("paganini", "black"),
+    ///    ("mint", "ginger"),
+    /// ]));
+    /// assert_eq!(cat_colors.get(&"paganini"), Some(&"black"));
+    /// assert_eq!(cat_colors.get(&"mint"), Some(&"ginger"));
+    /// ```
+    pub fn from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> ScopedMap<K, V> {
+        let mut map = ScopedMap::new();
+        map.extend(iter);
+        map
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::scopedmap::ScopedMap;
+    use crate::datastructures::scopedmap::ScopedMap;
 
     #[test]
     fn insert_after_nested_insert() {
