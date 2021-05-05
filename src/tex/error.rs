@@ -1,3 +1,5 @@
+//! Error types and error display logic
+
 use crate::tex::token::token::{Token, Value};
 use colored::*;
 

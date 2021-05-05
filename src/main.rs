@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::BufReader;
+use texide::tex::primitives;
 use texide::tex::token::catcode;
 use texide::tex::token::lexer;
 
@@ -16,6 +17,7 @@ pub fn run() -> Result<(), lexer::LexerError> {
 }
 
 fn main() {
+    primitives::expand();
     /*
     let err = lexer::TokenError{
         token: token::Token::Character(),
@@ -23,10 +25,10 @@ fn main() {
         noted: vec![]
     }
      */
-    let r = run();
-    if let Err(s) = r {
-        println!("{:?}", s);
-    }
+    //let r = run();
+    //if let Err(s) = r {
+    //    println!("{:?}", s);
+    //}
     /*
     let mut map = ScopedMap::new();
     map.insert(1, 3);

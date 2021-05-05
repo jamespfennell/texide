@@ -1,62 +1,66 @@
+//! A scoped map is a regular hash map with an additional concept of scope. A scope groups
+//! map operations together, and all mutations are rolled back at the end of the scope.
+//!
+//! # Examples
+//!
+//! The map methods are the same as the standard hash map (although only a few methods are
+//! implemented).
+//! ```
+//! # use texide::datastructures::scopedmap::ScopedMap;
+//! let mut cat_colors = ScopedMap::new();
+//! cat_colors.insert("mint", "ginger");
+//! assert_eq!(cat_colors.get(&"mint"), Some(&"ginger"));
+//! ```
+//! The scoped map additionally has `begin_scope` and `end_scope` methods along with the following
+//! behavior: when a scope is ended, all mutations to the map since the beginning of the scope are
+//! rolled back.
+//! ```
+//! # use texide::datastructures::scopedmap::ScopedMap;
+//! let mut cat_colors = ScopedMap::new();
+//!
+//! // Insert a new value, update the value in a new scope, and then end the scope to roll back
+//! // the update.
+//! cat_colors.insert("paganini", "black");
+//! cat_colors.begin_scope();
+//! cat_colors.insert("paganini", "gray");
+//! assert_eq!(cat_colors.get(&"paganini"), Some(&"gray"));
+//! assert_eq!(cat_colors.end_scope(), true);
+//! assert_eq!(cat_colors.get(&"paganini"), Some(&"black"));
+//!
+//! // Begin a new scope, insert a value, and then end the scope to roll back the insert.
+//! cat_colors.begin_scope();
+//! cat_colors.insert("mint", "ginger");
+//! assert_eq!(cat_colors.get(&"mint"), Some(&"ginger"));
+//! assert_eq!(cat_colors.end_scope(), true);
+//! assert_eq!(cat_colors.get(&"mint"), None);
+//! ```
+//! The `end_scope` method returns a boolean which is false if there is no scope to end, and true
+//! otherwise. It is generally an error to end a scope that hasn't been started, so the method is
+//! annoted with `#[must_use]`.
+//! ```
+//! # use texide::datastructures::scopedmap::ScopedMap;
+//! let mut cat_colors = ScopedMap::<String, String>::new();
+//! assert_eq!(cat_colors.end_scope(), false);
+//! ```
+//! There is also a "global" variant of the `insert` method. It inserts the value at the global
+//! scope, and erases all other values.
+//! ```
+//! # use texide::datastructures::scopedmap::ScopedMap;
+//! let mut cat_colors = ScopedMap::new();
+//! cat_colors.insert("paganini", "black");
+//! cat_colors.begin_scope();
+//! cat_colors.insert_global("paganini", "gray");
+//! assert_eq!(cat_colors.end_scope(), true);
+//! assert_eq!(cat_colors.get(&"paganini"), Some(&"gray"));
+//! ```
+//!
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::hash::Hash;
 use std::rc::Rc;
 
-/// A scoped map is a regular hash map with an additional concept of scope.
-///
-/// # Examples
-///
-/// The map methods are the same as the standard hash map (although only a few methods are
-/// implemented).
-/// ```
-/// # use texide::datastructures::scopedmap::ScopedMap;
-/// let mut cat_colors = ScopedMap::new();
-/// cat_colors.insert("mint", "ginger");
-/// assert_eq!(cat_colors.get(&"mint"), Some(&"ginger"));
-/// ```
-/// The scoped map additionally has `begin_scope` and `end_scope` methods along with the following
-/// behavior: when a scope is ended, all mutations to the map since the beginning of the scope are
-/// rolled back.
-/// ```
-/// # use texide::datastructures::scopedmap::ScopedMap;
-/// let mut cat_colors = ScopedMap::new();
-///
-/// // Insert a new value, update the value in a new scope, and then end the scope to roll back
-/// // the update.
-/// cat_colors.insert("paganini", "black");
-/// cat_colors.begin_scope();
-/// cat_colors.insert("paganini", "gray");
-/// assert_eq!(cat_colors.get(&"paganini"), Some(&"gray"));
-/// assert_eq!(cat_colors.end_scope(), true);
-/// assert_eq!(cat_colors.get(&"paganini"), Some(&"black"));
-///
-/// // Begin a new scope, insert a value, and then end the scope to roll back the insert.
-/// cat_colors.begin_scope();
-/// cat_colors.insert("mint", "ginger");
-/// assert_eq!(cat_colors.get(&"mint"), Some(&"ginger"));
-/// assert_eq!(cat_colors.end_scope(), true);
-/// assert_eq!(cat_colors.get(&"mint"), None);
-/// ```
-/// The `end_scope` method returns a boolean which is false if there is no scope to end, and true
-/// otherwise. It is generally an error to end a scope that hasn't been started, so the method is
-/// annoted with `#[must_use]`.
-/// ```
-/// # use texide::datastructures::scopedmap::ScopedMap;
-/// let mut cat_colors = ScopedMap::<String, String>::new();
-/// assert_eq!(cat_colors.end_scope(), false);
-/// ```
-/// There is also a "global" variant of the `insert` method. It inserts the value at the global
-/// scope, and erases all other values.
-/// ```
-/// # use texide::datastructures::scopedmap::ScopedMap;
-/// let mut cat_colors = ScopedMap::new();
-/// cat_colors.insert("paganini", "black");
-/// cat_colors.begin_scope();
-/// cat_colors.insert_global("paganini", "gray");
-/// assert_eq!(cat_colors.end_scope(), true);
-/// assert_eq!(cat_colors.get(&"paganini"), Some(&"gray"));
-/// ```
+/// Implementation of the `ScopedMap` data structure. See the module docs for more
+/// information.
 pub struct ScopedMap<K: Eq + Hash, V> {
     // The implementation is based on two internal data structures. The first is a map that for each
     // key contains the stack of values that have been inserted for that key. Each element of the

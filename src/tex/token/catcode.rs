@@ -1,3 +1,28 @@
+//! Data structures representing category codes and operations on them.
+//!
+//! The following table lists all 16 category codes in TeX. Names with an * are never
+//! returned from the lexer; instead, they are transformed into other category codes
+//! or ignored.
+//!
+//! | name           | #  | e.g. | description |
+//! |----------------|----|------|-------------|
+//! | `Escape`*      | 0  | `\`  | Denotes the beginning of a control sequence.
+//! | `BeginGroup`   | 1  | `{`  | Starts a new group/scope.
+//! | `EndGroup`     | 2  | `}`  | Ends an existing new group/scope.
+//! | `MathShift`    | 3  |      |
+//! | `AlignmentTab` | 4  |      |
+//! | `EndOfLine`*   | 5  | `\n` | New line in the input. Two consecutive new lines modulo whitespace create a `\par` control sequence.
+//! | `Parameter`    | 6  | `#`  | Denotes the beginning of a parameter number; must generally be followed by a digit.
+//! | `Superscript`  | 7  | `^`  | Puts following character or group in a superscript.
+//! | `Subscript`    | 8  | `_`  | Puts following character or group in a subscript.
+//! | `Ignored`*     | 9  |      | Ignored by the lexer.
+//! | `Space`        | 10 | ` `  | Whitespace.
+//! | `Letter`       | 11 | `A`  | A character that can be used as a control sequence name.
+//! | `Other`        | 12 | `@`  | A character than cannot be used as a control sequence name.
+//! | `Active`       | 13 |      |
+//! | `Comment`*     | 14 | `%`  | Denotes the beginning of a comment; all remaining characters on the line will be ignored.
+//! | `Invalid`*     | 15 |      | An invalid character; if this is read in the input, a error will fire.
+//!
 use crate::datastructures::scopedmap::ScopedMap;
 
 use CatCode::*;
@@ -5,6 +30,7 @@ use RawCatCode::*;
 
 // TODO: need a separate InternalCatCode enum that has the CatCodes that can't escape tokenization?
 // Exercise 7.3 in the TeX book
+/// Enum representing all 11 category codes that can be returned by the lexer.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum CatCode {
     BeginGroup,
@@ -20,6 +46,20 @@ pub enum CatCode {
     Active,
 }
 
+impl CatCode {
+    pub fn int(&self) -> u8 {
+        RawCatCode::Regular(self.clone()).int()
+    }
+
+    pub fn from_int(int: u8) -> Option<CatCode> {
+        match RawCatCode::from_int(int) {
+            Some(Regular(cat_code)) => Some(cat_code),
+            _ => None,
+        }
+    }
+}
+
+/// Enum representing all 16 category codes in TeX.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum RawCatCode {
     Regular(CatCode),

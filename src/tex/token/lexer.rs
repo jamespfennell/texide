@@ -1,5 +1,18 @@
-//! The lexer module contains the TeX lexer. This reads input streams of UTF-8 characters
-//! and outputs TeX tokens. See the documentation on the `Lexer` type for full documentation.
+//! The TeX lexer, which reads input streams of characters and outputs TeX tokens.
+//!
+//! Because of restrictions of the TeX language itself, the lexer is "just in time". It only
+//! produces the next token when that token is requested. In general, it is an error to request
+//! many TeX tokens and process them as batch. This is because lexing in TeX is controlled by
+//! catcodes which can dynamically change at runtime based on the results of the lexer. Let's
+//! consider a TeX snippet and assume that the catcode mappings are at their default:
+//! ```tex
+//! \change_catcode_of_A_to_whitespace AB
+//! ```
+//! If tokenized as a batch, the lexer will return a control sequence `\change_...`, and two
+//! letter tokens A and B. However the control sequence itself changes the letter A to be a
+//! whitespace character, and so the lexer must in fact trim it away as part of trimming all
+//! whitespace characters after a control sequence. The correct result is thus the control sequence
+//! followed by the single letter token B.
 
 use crate::datastructures::scopedmap::ScopedMap;
 use crate::tex::error;
@@ -27,20 +40,6 @@ impl From<io::Error> for LexerError {
 }
 
 /// The Lexer...
-///
-/// Because of restrictions of the TeX language itself, the lexer is "just in time". It only
-/// produces the next token when that token is requested. In general, it is an error to request
-/// many TeX tokens and process them as batch. This is because lexing in TeX is controlled by
-/// catcodes which can dynamically change at runtime based on the results of the lexer. Let's
-/// consider a TeX snippet and assume that the catcode mappings are at their default:
-/// ```tex
-/// \change_catcode_of_A_to_whitespace AB
-/// ```
-/// If tokenized as a batch, the lexer will return a control sequence `\change_...`, and two
-/// letter tokens A and B. However the control sequence itself changes the letter A to be a
-/// whitespace character, and so the lexer must in fact trim it away as part of trimming all
-/// whitespace characters after a control sequence. The correct result is thus the control sequence
-/// followed by the single letter token B.
 pub struct Lexer<T: io::BufRead> {
     raw_lexer: RawLexer<T>,
     trim_next_whitespace: bool,
