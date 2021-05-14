@@ -12,4 +12,9 @@ COPY src src
 RUN cargo doc --no-deps --lib
 
 FROM nginx
-COPY --from=builder /usr/src/texide-docs/target/doc /usr/share/nginx/html/rustdoc
+
+WORKDIR /usr/share/nginx/html
+
+RUN rm ./*
+COPY doc/* ./
+COPY --from=builder /usr/src/texide-docs/target/doc rustdoc
