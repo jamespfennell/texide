@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::BufReader;
-use texide::tex::primitives;
+use texide::tex::primitive;
 use texide::tex::token::catcode;
 use texide::tex::token::lexer;
 
@@ -17,7 +17,7 @@ pub fn run() -> Result<(), lexer::LexerError> {
 }
 
 fn main() {
-    primitives::expand();
+    primitive::expand();
     run();
 
     /*

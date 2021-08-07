@@ -1,11 +1,11 @@
 //! TeX execution driver.
 
-use crate::tex::primitives::expansion;
+use crate::tex::primitive::expansion;
 use crate::tex::state;
 use crate::tex::token::stream;
 use crate::tex::token::token;
 
-use crate::tex::primitives::expansion::Input;
+use crate::tex::primitive::expansion::Input;
 use crate::tex::token::stream::Stream;
 
 use std::convert::TryFrom;

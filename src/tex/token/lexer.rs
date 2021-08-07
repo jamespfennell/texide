@@ -90,7 +90,7 @@ impl<T: io::BufRead> Lexer<T> {
             self.trim_next_whitespace = matches!(value, token::Value::ControlSequence(..));
             return Ok(Some(token::Token {
                 value,
-                source: raw_token.source,
+                source: Some(raw_token.source),
             }));
         }
         Ok(None)
@@ -125,7 +125,7 @@ impl<T: io::BufRead> Lexer<T> {
                     error::new_token_error(
                         token::Token {
                             value: token::Value::Character(raw_token.char, CatCode::Other),
-                            source: raw_token.source.clone(),
+                            source: Some(raw_token.source.clone()),
                         },
                         MALFORMED_CONTROL_SEQUENCE_ERROR_TITLE.to_string(),
                         vec![MALFORMED_CONTROL_SEQUENCE_ERROR_HELP.to_string()],

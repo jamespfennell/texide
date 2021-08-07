@@ -1,6 +1,6 @@
 //! The Texide primitive, which returns the word Texide as 6 letter tokens.
 
-use crate::tex::primitives::expansion;
+use crate::tex::primitive::expansion;
 
 use crate::tex::token::stream;
 

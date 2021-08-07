@@ -1,4 +1,4 @@
-use crate::tex::primitives::expansion;
+use crate::tex::primitive::expansion;
 use std::rc::Rc;
 use crate::datastructures::scopedmap::ScopedMap;
 
@@ -19,15 +19,5 @@ impl<S> BaseState<S> {
         BaseState {
             primitives: ScopedMap::new()
         }
-    }
-}
-
-impl<S> TexState<S> for BaseState<S> {
-    fn base(&self) -> &BaseState<S> {
-        self
-    }
-
-    fn base_mut(&mut self) -> &mut BaseState<S> {
-        self
     }
 }

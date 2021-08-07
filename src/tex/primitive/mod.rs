@@ -138,26 +138,12 @@ fn create_token(c: char) -> token::Token {
         // TODO: should not have to specify source or something
         // TODO: clearly we need to constructors for tokens
         // TODO: maybe even a nice constructor for VecStream?
-        source: token::Source {
-            line: Rc::new(token::Line {
-                content: "".to_string(),
-                line_number: 0,
-                file: Rc::new("".to_string()),
-            }),
-            position: 0,
-        },
+        source: None,
     }
 }
 fn create_cmd_token(s: String) -> token::Token {
     token::Token {
         value: token::Value::ControlSequence('\\', s),
-        source: token::Source {
-            line: Rc::new(token::Line {
-                content: "".to_string(),
-                line_number: 0,
-                file: Rc::new("".to_string()),
-            }),
-            position: 0,
-        },
+        source: None,
     }
 }
