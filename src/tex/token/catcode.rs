@@ -1,6 +1,6 @@
 //! Data structures representing category codes and operations on them.
 //!
-//! The following table lists all 16 category codes in TeX. Names with an * are never
+//! The following table lists all 16 category codes in TeX. Names marked with * are never
 //! returned from the lexer; instead, they are transformed into other category codes
 //! or ignored.
 //!
@@ -28,7 +28,6 @@ use crate::datastructures::scopedmap::ScopedMap;
 use CatCode::*;
 use RawCatCode::*;
 
-// TODO: need a separate InternalCatCode enum that has the CatCodes that can't escape tokenization?
 // Exercise 7.3 in the TeX book
 /// Enum representing all 11 category codes that can be returned by the lexer.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -48,12 +47,34 @@ pub enum CatCode {
 
 impl CatCode {
     pub fn int(&self) -> u8 {
-        RawCatCode::Regular(self.clone()).int()
+        match self {
+            BeginGroup => 1,
+            EndGroup => 2,
+            MathShift => 3,
+            AlignmentTab => 4,
+            Parameter => 6,
+            Superscript => 7,
+            Subscript => 8,
+            Space => 10,
+            Letter => 11,
+            Other => 12,
+            Active => 13,
+        }
     }
 
     pub fn from_int(int: u8) -> Option<CatCode> {
-        match RawCatCode::from_int(int) {
-            Some(Regular(cat_code)) => Some(cat_code),
+        match int {
+            1 => Some(BeginGroup),
+            2 => Some(EndGroup),
+            3 => Some(MathShift),
+            4 => Some(AlignmentTab),
+            6 => Some(Parameter),
+            7 => Some(Superscript),
+            8 => Some(Subscript),
+            10 => Some(Space),
+            11 => Some(Letter),
+            12 => Some(Other),
+            13 => Some(Active),
             _ => None,
         }
     }
@@ -73,20 +94,10 @@ pub enum RawCatCode {
 impl RawCatCode {
     pub fn int(&self) -> u8 {
         match self {
+            Regular(catCode) => catCode.int(),
             Escape => 0,
-            Regular(BeginGroup) => 1,
-            Regular(EndGroup) => 2,
-            Regular(MathShift) => 3,
-            Regular(AlignmentTab) => 4,
             EndOfLine => 5,
-            Regular(Parameter) => 6,
-            Regular(Superscript) => 7,
-            Regular(Subscript) => 8,
             Ignored => 9,
-            Regular(Space) => 10,
-            Regular(Letter) => 11,
-            Regular(Other) => 12,
-            Regular(Active) => 13,
             Comment => 14,
             Invalid => 15,
         }
@@ -95,22 +106,11 @@ impl RawCatCode {
     pub fn from_int(int: u8) -> Option<RawCatCode> {
         match int {
             0 => Some(Escape),
-            1 => Some(Regular(BeginGroup)),
-            2 => Some(Regular(EndGroup)),
-            3 => Some(Regular(MathShift)),
-            4 => Some(Regular(AlignmentTab)),
             5 => Some(EndOfLine),
-            6 => Some(Regular(Parameter)),
-            7 => Some(Regular(Superscript)),
-            8 => Some(Regular(Subscript)),
             9 => Some(Ignored),
-            10 => Some(Regular(Space)),
-            11 => Some(Regular(Letter)),
-            12 => Some(Regular(Other)),
-            13 => Some(Regular(Active)),
             14 => Some(Comment),
             15 => Some(Invalid),
-            _ => None,
+            int => CatCode::from_int(int).map(|cat_code| Regular(cat_code)),
         }
     }
 }
@@ -193,4 +193,50 @@ pub fn tex_defaults() -> ScopedMap<char, RawCatCode> {
         ('y', Regular(Letter)),
         ('z', Regular(Letter)),
     ]))
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::tex::token::catcode::RawCatCode::Regular;
+    use crate::tex::token::catcode::{CatCode, RawCatCode};
+
+    fn all_cat_codes() -> Vec<CatCode> {
+        vec![
+            CatCode::BeginGroup,
+            CatCode::EndGroup,
+            CatCode::MathShift,
+            CatCode::AlignmentTab,
+            CatCode::Parameter,
+            CatCode::Superscript,
+            CatCode::Subscript,
+            CatCode::Space,
+            CatCode::Letter,
+            CatCode::Other,
+            CatCode::Active,
+        ]
+    }
+
+    #[test]
+    fn serialize_and_deserialize_raw_cat_code() {
+        for cat_code in all_cat_codes() {
+            assert_eq!(CatCode::from_int(cat_code.int()), Some(cat_code))
+        }
+    }
+
+    #[test]
+    fn serialize_and_deserialize_cat_code() {
+        let mut all_raw_cat_codes = vec![
+            RawCatCode::Escape,
+            RawCatCode::EndOfLine,
+            RawCatCode::Ignored,
+            RawCatCode::Comment,
+            RawCatCode::Invalid,
+        ];
+        for cat_code in all_cat_codes() {
+            all_raw_cat_codes.push(Regular(cat_code))
+        }
+        for cat_code in all_raw_cat_codes {
+            assert_eq!(RawCatCode::from_int(cat_code.int()), Some(cat_code))
+        }
+    }
 }

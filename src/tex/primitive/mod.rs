@@ -33,7 +33,7 @@ pub trait Input<State> {
 }
 
 // TODO: rename expansion
-// TODO: clonable
+// TODO: clonable?
 pub trait ExpansionPrimitive<State>: Any {
     fn call(&self, input: &mut dyn Input<State>) -> anyhow::Result<Box<dyn stream::Stream>>;
     // TODO: add docs
