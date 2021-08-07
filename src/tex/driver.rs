@@ -6,10 +6,10 @@ use crate::tex::token::stream;
 use crate::tex::token::token;
 
 use crate::tex::primitives::expansion::Input;
-use crate::tex::state::Expandable;
 use crate::tex::token::stream::Stream;
 
 use std::convert::TryFrom;
+use crate::tex::state::TexState;
 
 pub trait StateAndStream {
     type State;
@@ -26,7 +26,7 @@ pub trait StateAndStream {
 pub fn run<SAS>(state_and_stream: SAS)
 where
     SAS: StateAndStream,
-    SAS::State: state::Expandable<SAS::State>,
+    SAS::State: state::TexState<SAS::State>,
 {
     let mut input = ExpansionInputImpl::<SAS> {
         unexpanded_stream: UnexpandedStream::<SAS> {
@@ -56,7 +56,7 @@ struct UnexpandedStream<SAS: StateAndStream> {
 impl<SAS> stream::Stream for UnexpandedStream<SAS>
 where
     SAS: StateAndStream,
-    SAS::State: state::Expandable<SAS::State>,
+    SAS::State: state::TexState<SAS::State>,
 {
     fn next(&mut self) -> anyhow::Result<Option<token::Token>> {
         self.prepare_imut_peek()?;
@@ -96,7 +96,7 @@ struct ExpansionInputImpl<SAS: StateAndStream> {
 impl<SAS> stream::Stream for ExpansionInputImpl<SAS>
 where
     SAS: StateAndStream,
-    SAS::State: state::Expandable<SAS::State>,
+    SAS::State: state::TexState<SAS::State>,
 {
     fn next(&mut self) -> anyhow::Result<Option<token::Token>> {
         while self.expand_next()? {}
@@ -116,7 +116,7 @@ where
 impl<SAS> expansion::Input<SAS::State> for ExpansionInputImpl<SAS>
 where
     SAS: StateAndStream,
-    SAS::State: state::Expandable<SAS::State>,
+    SAS::State: state::TexState<SAS::State>,
 {
     fn state(&self) -> &SAS::State {
         self.unexpanded_stream.state_and_stream.state()
@@ -141,7 +141,7 @@ where
             Some(token) => match token.value {
                 token::Value::Character(..) => None,
                 token::Value::ControlSequence(_, ref name) => {
-                    self.state().get_expansion_command(name)
+                    self.state().base().primitives.get(name)
                 }
             },
         };

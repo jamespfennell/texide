@@ -1,6 +1,33 @@
 use crate::tex::primitives::expansion;
 use std::rc::Rc;
+use crate::datastructures::scopedmap::ScopedMap;
 
-pub trait Expandable<State> {
-    fn get_expansion_command(&self, name: &String) -> Option<&Rc<dyn expansion::Command<State>>>;
+// TeXState is a trait that every state in Texide satisfies. It ensures that the state
+// can be used for perform expansion, handle macro processing, etc.
+pub trait TexState<S> {
+    fn base(&self) -> &BaseState<S>;
+    fn base_mut(&mut self) -> &mut BaseState<S>;
+}
+
+pub struct BaseState<S> {
+    pub primitives: ScopedMap<String, Rc<dyn expansion::Command<S>>>
+}
+
+impl<S> BaseState<S> {
+    // Create a new BaseState
+    pub fn new() -> BaseState<S> {
+        BaseState {
+            primitives: ScopedMap::new()
+        }
+    }
+}
+
+impl<S> TexState<S> for BaseState<S> {
+    fn base(&self) -> &BaseState<S> {
+        self
+    }
+
+    fn base_mut(&mut self) -> &mut BaseState<S> {
+        self
+    }
 }
