@@ -7,12 +7,12 @@ use crate::tex::token::catcode::CatCode;
 use crate::tex::token::stream;
 use crate::tex::token::token;
 use crate::tex::{driver, state};
-use library::texide;
+use library::{conditional, texide};
 use std::rc;
 
 pub mod library;
 
-use std::any::Any;
+use std::any::{Any, TypeId};
 
 pub trait Input<State> {
     /// Returns an immutable reference to the underlying state.
@@ -37,6 +37,10 @@ pub trait Input<State> {
 pub trait ExpansionPrimitive<State>: Any {
     fn call(&self, input: &mut dyn Input<State>) -> anyhow::Result<Box<dyn stream::Stream>>;
     // TODO: add docs
+
+    fn id(&self) -> Option<TypeId> {
+        None
+    }
 }
 
 pub enum Primitive<State> {
@@ -103,6 +107,18 @@ pub fn expand() {
         "james".to_string(),
         Primitive::Expansion(rc::Rc::new(texide::get_texide())),
     );
+    commands.insert(
+        "if".to_string(),
+        Primitive::Expansion(rc::Rc::new(conditional::get_if())),
+    );
+    commands.insert(
+        "else".to_string(),
+        Primitive::Expansion(rc::Rc::new(conditional::get_else())),
+    );
+    commands.insert(
+        "fi".to_string(),
+        Primitive::Expansion(rc::Rc::new(conditional::get_fi())),
+    );
     /*commands.insert(
         "james2".to_string(),
         rc::Rc::new(StaticCommand {
@@ -121,7 +137,10 @@ pub fn expand() {
         create_token('n'),
         create_token('p'),
         create_cmd_token("mint".to_string()),
+        create_cmd_token("if".to_string()),
         create_cmd_token("james".to_string()),
+        create_token('u'),
+        create_cmd_token("else".to_string()),
         create_token('u'),
         create_token('t'),
     ]);

@@ -5,6 +5,7 @@ use texide::tex::token::catcode;
 use texide::tex::token::lexer;
 
 pub fn run() -> Result<(), lexer::LexerError> {
+    return Ok(());
     let f = BufReader::new(File::open("foo.tex")?);
     // let mut reader = CharReader::new(f);
     let mut lexer = lexer::Lexer::new(f);
