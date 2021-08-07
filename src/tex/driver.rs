@@ -1,15 +1,15 @@
 //! TeX execution driver.
 
-use crate::tex::primitive::expansion;
+use crate::tex::primitive;
 use crate::tex::state;
 use crate::tex::token::stream;
 use crate::tex::token::token;
 
-use crate::tex::primitive::expansion::Input;
 use crate::tex::token::stream::Stream;
 
-use std::convert::TryFrom;
+use crate::tex::primitive::Input;
 use crate::tex::state::TexState;
+use std::convert::TryFrom;
 
 pub trait StateAndStream {
     type State;
@@ -49,7 +49,7 @@ where
 }
 
 struct UnexpandedStream<SAS: StateAndStream> {
-    stack: Vec<stream::VecStream>,
+    stack: Vec<Box<dyn stream::Stream>>,
     state_and_stream: SAS,
 }
 
@@ -113,7 +113,7 @@ where
     }
 }
 
-impl<SAS> expansion::Input<SAS::State> for ExpansionInputImpl<SAS>
+impl<SAS> primitive::Input<SAS::State> for ExpansionInputImpl<SAS>
 where
     SAS: StateAndStream,
     SAS::State: state::TexState<SAS::State>,
@@ -146,17 +146,12 @@ where
             },
         };
         let command = match command {
-            Some(command) => command.clone(),
+            Some(primitive::Primitive::Expansion(command)) => command.clone(),
             None => return Ok(false),
         };
         self.unexpanded_stream.consume()?;
-        if let Some(vec_stream) = match command.run(self)? {
-            expansion::Output::None => None,
-            expansion::Output::Vec(vec_stream) => Some(vec_stream),
-            expansion::Output::Other(stream) => Some(stream::VecStream::try_from(stream)?),
-        } {
-            self.unexpanded_stream.stack.push(vec_stream);
-        }
+        let output = command.call(self)?;
+        self.unexpanded_stream.stack.push(output);
         Ok(true)
     }
 }

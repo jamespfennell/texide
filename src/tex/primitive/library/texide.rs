@@ -1,6 +1,6 @@
 //! The Texide primitive, which returns the word Texide as 6 letter tokens.
 
-use crate::tex::primitive::expansion;
+use crate::tex::primitive;
 
 use crate::tex::token::stream;
 
@@ -9,9 +9,9 @@ use std::any::Any;
 
 struct James {}
 
-impl<State> expansion::Command<State> for James {
-    fn run(&self, _: &mut dyn expansion::Input<State>) -> anyhow::Result<expansion::Output> {
-        Ok(expansion::Output::Vec(stream::VecStream::new(vec![
+impl<State> primitive::ExpansionPrimitive<State> for James {
+    fn call(&self, _: &mut dyn primitive::Input<State>) -> anyhow::Result<Box<dyn stream::Stream>> {
+        Ok(Box::new(stream::VecStream::new(vec![
             token::Token::new_letter('T'),
             token::Token::new_letter('e'),
             token::Token::new_letter('x'),
@@ -24,12 +24,14 @@ impl<State> expansion::Command<State> for James {
 
 static JAMES: James = James {};
 
-pub fn get_texide<State>() -> impl expansion::Command<State> {
+pub fn get_texide<State>() -> impl primitive::ExpansionPrimitive<State> {
     return James {};
 }
 
-pub fn texide_command<State>(_: &mut dyn expansion::Input<State>) -> anyhow::Result<expansion::Output> {
-    Ok(expansion::Output::Vec(stream::VecStream::new(vec![
+pub fn texide_command<State>(
+    _: &mut dyn primitive::Input<State>,
+) -> anyhow::Result<Box<dyn stream::Stream>> {
+    Ok(Box::new(stream::VecStream::new(vec![
         token::Token::new_letter('T'),
         token::Token::new_letter('e'),
         token::Token::new_letter('x'),

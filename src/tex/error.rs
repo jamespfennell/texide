@@ -1,7 +1,7 @@
 //! Error types and error display logic
 
-use crate::tex::token::token::{Token, Value, Source};
 use crate::tex::token::token;
+use crate::tex::token::token::{Source, Token, Value};
 use colored::*;
 use std::rc::Rc;
 
@@ -52,17 +52,15 @@ impl std::fmt::Display for TokenError {
 pub fn new_token_error(token: Token, message: String, notes: Vec<String>) -> anyhow::Error {
     // TODO: better handling for no source case?
     let source = match token.source {
-        None => {
-            token::Source {
-                line: Rc::new(token::Line {
-                    content: "".to_string(),
-                    line_number: 0,
-                    file: Rc::new("".to_string()),
-                }),
-                position: 0,
-            }
-        }
-        Some(source) => {source}
+        None => token::Source {
+            line: Rc::new(token::Line {
+                content: "".to_string(),
+                line_number: 0,
+                file: Rc::new("".to_string()),
+            }),
+            position: 0,
+        },
+        Some(source) => source,
     };
     anyhow::Error::from(TokenError {
         line: source.line.content.clone(),
