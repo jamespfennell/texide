@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::BufReader;
-use texide::tex::primitives;
+use texide::tex::primitive;
 use texide::tex::token::catcode;
 use texide::tex::token::lexer;
 
@@ -10,14 +10,16 @@ pub fn run() -> Result<(), lexer::LexerError> {
     let mut lexer = lexer::Lexer::new(f);
     let map = catcode::tex_defaults();
 
-    while let Some(_) = lexer.next(&map)? {
-        //println!("Token: {:?}", t)
+    while let Some(t) = lexer.next(&map)? {
+        println!("Token: {:?}", t)
     }
     Ok(())
 }
 
 fn main() {
-    primitives::expand();
+    primitive::expand();
+    run();
+
     /*
     let err = lexer::TokenError{
         token: token::Token::Character(),

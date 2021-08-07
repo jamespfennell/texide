@@ -1,5 +1,4 @@
-//! Definition of the token stream trait, which is a fundemental
-//! data type in Texide, and some general-purpose imeplementations of the trait.
+//! Definition of the token stream trait and some general-purpose implementations.
 //!
 //! The simplest example of a stream is a vector of tokens. However, streams are more general
 //! than this and can encompass situations in which the full contents cannot be determined in

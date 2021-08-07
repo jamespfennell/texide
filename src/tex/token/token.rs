@@ -11,24 +11,14 @@ pub enum Value {
 #[derive(Debug, Eq, PartialEq)]
 pub struct Token {
     pub value: Value,
-    pub source: Source,
+    pub source: Option<Source>,
 }
 
 impl Token {
     pub fn new_letter(c: char) -> Token {
         return Token {
             value: Value::Character(c, CatCode::Letter),
-            // TODO: should not have to specify source or something
-            // TODO: clearly we need to constructors for tokens
-            // TODO: maybe even a nice constructor for VecStream?
-            source: Source {
-                line: Rc::new(Line {
-                    content: "".to_string(),
-                    line_number: 0,
-                    file: Rc::new("".to_string()),
-                }),
-                position: 0,
-            },
+            source: None,
         };
     }
 }
