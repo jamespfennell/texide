@@ -124,7 +124,13 @@ pub fn or_default(c: Option<&RawCatCode>) -> RawCatCode {
 
 // TODO: the cat code wrapper should have nice insert ops for regular catcodes
 pub fn tex_defaults() -> ScopedMap<char, RawCatCode> {
-    ScopedMap::from_iter(std::array::IntoIter::new([
+    let mut cat_code_map = ScopedMap::new();
+    set_tex_defaults(&mut cat_code_map);
+    cat_code_map
+}
+
+pub fn set_tex_defaults(cat_code_map: &mut ScopedMap<char, RawCatCode>) {
+    cat_code_map.extend(std::array::IntoIter::new([
         ('\\', Escape),
         ('{', Regular(BeginGroup)),
         ('}', Regular(EndGroup)),
