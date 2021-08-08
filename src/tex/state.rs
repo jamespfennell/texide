@@ -34,6 +34,13 @@ pub trait TexState<S> {
             None
         }
     }
+
+    fn set_expansion_primitive(&mut self, name: &str, p: Rc<dyn primitive::ExpansionPrimitive<S>>) {
+        self.base_mut()
+            .primitives
+            .insert(name.to_string(), Primitive::Expansion(p));
+        ()
+    }
 }
 
 pub struct BaseState<S> {

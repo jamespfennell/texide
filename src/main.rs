@@ -1,13 +1,13 @@
 use std::env;
 
-
 use std::process;
 use texide::tex::driver;
 
+use std::rc;
+use texide::tex::primitive::library::conditional;
 use texide::tex::state;
 use texide::tex::state::TexState;
 use texide::tex::token::catcode;
-
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -28,6 +28,8 @@ fn main() {
 
 pub fn run(file_name: &str) -> Result<(), anyhow::Error> {
     let mut s = state::SimpleState::new();
+    s.set_expansion_primitive("if", rc::Rc::new(conditional::get_if()));
+    s.set_expansion_primitive("else", rc::Rc::new(conditional::get_else()));
     let input_module = &mut s.base_mut().input_module;
     catcode::set_tex_defaults(&mut input_module.cat_code_map);
     input_module.open_file(file_name)?;

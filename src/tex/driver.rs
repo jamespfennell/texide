@@ -11,9 +11,11 @@ use crate::tex::primitive::Input;
 use crate::tex::state::TexState;
 
 pub fn run<S: TexState<S>>(state: S) {
-    let mut input = UnexpandedStream::<S> {
-        s: state,
-        stack: vec![],
+    let mut input = ExpandedStream::<S> {
+        unexpanded_stream: UnexpandedStream::<S> {
+            s: state,
+            stack: vec![],
+        },
     };
     loop {
         match input.next() {
@@ -34,18 +36,6 @@ struct UnexpandedStream<S> {
     s: S,
     stack: Vec<Box<dyn stream::Stream>>,
 }
-
-/*
-impl<S> ExpandingStream<S> {
-  fn state(&self) -> &S {
-    &self.s
-  }
-
-  fn state_mut(&mut self) -> &mut S {
-    &mut self.s
-  }
-}
-*/
 
 impl<S: TexState<S>> stream::Stream for UnexpandedStream<S> {
     fn next(&mut self) -> anyhow::Result<Option<token::Token>> {
@@ -130,6 +120,7 @@ impl<S: TexState<S>> primitive::Input<S> for ExpandedStream<S> {
             Some(token) => match token.value {
                 token::Value::Character(..) => None,
                 token::Value::ControlSequence(_, ref name) => {
+                    //println!("Considering command {}", name);
                     self.state().base().primitives.get(name)
                 }
             },

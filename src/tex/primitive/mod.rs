@@ -1,11 +1,6 @@
 //! Texide primitives API and primitives library.
 
-
-
-
-
 use crate::tex::token::stream;
-
 
 use std::rc;
 
