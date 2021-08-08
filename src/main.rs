@@ -1,50 +1,44 @@
-use std::fs::File;
-use std::io::BufReader;
-use texide::tex::primitive;
+use std::env;
+
+use std::process;
+use texide::tex::driver;
+
+use std::rc;
+use texide::tex::primitive::library::conditional;
+use texide::tex::state;
+use texide::tex::state::TexState;
 use texide::tex::token::catcode;
-use texide::tex::token::lexer;
-
-pub fn run() -> Result<(), lexer::LexerError> {
-    let f = BufReader::new(File::open("foo.tex")?);
-    // let mut reader = CharReader::new(f);
-    let mut lexer = lexer::Lexer::new(f);
-    let map = catcode::tex_defaults();
-
-    while let Some(t) = lexer.next(&map)? {
-        println!("Token: {:?}", t)
-    }
-    Ok(())
-}
 
 fn main() {
-    primitive::expand();
-    run();
+    let args: Vec<String> = env::args().collect();
+    match args.get(1) {
+        None => {
+            println!("Pass the tex file as an argument");
+            process::exit(1);
+        }
+        Some(file_name) => {
+            let r = run(file_name);
+            if let Some(err) = r.err() {
+                println!("Failed: {}", err);
+                process::exit(1);
+            }
+        }
+    };
+}
 
-    /*
-    let err = lexer::TokenError{
-        token: token::Token::Character(),
-        message: "".to_string(),
-        noted: vec![]
-    }
-     */
-    //let r = run();
-    //if let Err(s) = r {
-    //    println!("{:?}", s);
-    //}
-    /*
-    let mut map = ScopedMap::new();
-    map.insert(1, 3);
-    println!("{:?}", map.get(&1));
-    println!("{:?}", map.get(&2));
-    map.begin_scope();
-    map.insert(1, 2);
-    map.insert(2, 5);
-    println!("{:?}", map.get(&1));
-    println!("{:?}", map.get(&2));
-    assert!(map.end_scope());
-    println!("{:?}", map.get(&1));
-    println!("{:?}", map.get(&2));
-    println!("Hello, world!");
+macro_rules! set_e {
+    ($state: expr, $name: expr, $p: expr) => {
+        &mut $state.set_expansion_primitive($name.to_string(), rc::Rc::new($p))
+    };
+}
 
-     */
+pub fn run(file_name: &str) -> Result<(), anyhow::Error> {
+    let mut s = state::SimpleState::new();
+    set_e![s, "if", conditional::get_if()];
+    set_e![s, "else", conditional::get_else()];
+    let input_module = &mut s.base_mut().input_module;
+    catcode::set_tex_defaults(&mut input_module.cat_code_map);
+    input_module.open_file(file_name)?;
+    driver::run(s)?;
+    Ok(())
 }

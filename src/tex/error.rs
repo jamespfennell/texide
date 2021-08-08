@@ -1,7 +1,7 @@
 //! Error types and error display logic
 
 use crate::tex::token::token;
-use crate::tex::token::token::{Source, Token, Value};
+use crate::tex::token::token::{Token, Value};
 use colored::*;
 use std::rc::Rc;
 

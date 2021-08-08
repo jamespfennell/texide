@@ -1,7 +1,7 @@
 //! TeX execution driver.
 
 use crate::tex::primitive;
-use crate::tex::state;
+
 use crate::tex::token::stream;
 use crate::tex::token::token;
 
@@ -9,59 +9,37 @@ use crate::tex::token::stream::Stream;
 
 use crate::tex::primitive::Input;
 use crate::tex::state::TexState;
-use std::convert::TryFrom;
 
-pub trait StateAndStream {
-    type State;
-
-    fn state(&self) -> &Self::State;
-
-    fn state_mut(&mut self) -> &mut Self::State;
-
-    fn stream(&self) -> &dyn stream::Stream;
-
-    fn stream_mut(&mut self) -> &mut dyn stream::Stream;
-}
-
-pub fn run<SAS>(state_and_stream: SAS)
-where
-    SAS: StateAndStream,
-    SAS::State: state::TexState<SAS::State>,
-{
-    let mut input = ExpansionInputImpl::<SAS> {
-        unexpanded_stream: UnexpandedStream::<SAS> {
+pub fn run<S: TexState<S>>(state: S) -> anyhow::Result<()> {
+    let mut input = ExpandedStream::<S> {
+        unexpanded_stream: UnexpandedStream::<S> {
+            s: state,
             stack: vec![],
-            state_and_stream,
         },
     };
     loop {
-        match input.next() {
-            Ok(None) => break,
-            Ok(Some(token)) => {
-                println!("{:?}", token)
-            }
-            Err(_) => {
-                println!("ERROR");
-                break;
+        match input.next()? {
+            None => break,
+            Some(token) => {
+                // TODO: this is where the execution code goes
+                println!("{:?}", token.value)
             }
         };
     }
+    Ok(())
 }
 
-struct UnexpandedStream<SAS: StateAndStream> {
+// TODO: maybe a better name?
+struct UnexpandedStream<S> {
+    s: S,
     stack: Vec<Box<dyn stream::Stream>>,
-    state_and_stream: SAS,
 }
 
-impl<SAS> stream::Stream for UnexpandedStream<SAS>
-where
-    SAS: StateAndStream,
-    SAS::State: state::TexState<SAS::State>,
-{
+impl<S: TexState<S>> stream::Stream for UnexpandedStream<S> {
     fn next(&mut self) -> anyhow::Result<Option<token::Token>> {
         self.prepare_imut_peek()?;
         match self.stack.last_mut() {
-            None => self.state_and_stream.stream_mut().next(),
+            None => self.s.base_mut().input_module.next(),
             Some(top) => top.next(),
         }
     }
@@ -69,7 +47,7 @@ where
     fn prepare_imut_peek(&mut self) -> anyhow::Result<()> {
         loop {
             match self.stack.last_mut() {
-                None => return self.state_and_stream.stream_mut().prepare_imut_peek(),
+                None => return self.s.base_mut().input_module.prepare_imut_peek(),
                 Some(top) => match top.peek()? {
                     None => {
                         self.stack.pop();
@@ -83,21 +61,24 @@ where
 
     fn imut_peek(&self) -> anyhow::Result<Option<&token::Token>> {
         match self.stack.last() {
-            None => self.state_and_stream.stream().imut_peek(),
+            None => self.s.base().input_module.imut_peek(),
             Some(top) => top.imut_peek(),
         }
     }
 }
 
-struct ExpansionInputImpl<SAS: StateAndStream> {
-    unexpanded_stream: UnexpandedStream<SAS>,
+// TODO: THIS IS WIERD
+// Seems like we shouldn't need a second struct to do what we want
+// Maybe unexpanded_stream should return a transient struct instead
+//
+// struct DriverShimThing<S, 'a> {
+//    unexpanded_stream<'a>: &mut UnexpandedStream
+// }
+struct ExpandedStream<S> {
+    unexpanded_stream: UnexpandedStream<S>,
 }
 
-impl<SAS> stream::Stream for ExpansionInputImpl<SAS>
-where
-    SAS: StateAndStream,
-    SAS::State: state::TexState<SAS::State>,
-{
+impl<S: TexState<S>> stream::Stream for ExpandedStream<S> {
     fn next(&mut self) -> anyhow::Result<Option<token::Token>> {
         while self.expand_next()? {}
         self.unexpanded_stream.next()
@@ -113,17 +94,13 @@ where
     }
 }
 
-impl<SAS> primitive::Input<SAS::State> for ExpansionInputImpl<SAS>
-where
-    SAS: StateAndStream,
-    SAS::State: state::TexState<SAS::State>,
-{
-    fn state(&self) -> &SAS::State {
-        self.unexpanded_stream.state_and_stream.state()
+impl<S: TexState<S>> primitive::Input<S> for ExpandedStream<S> {
+    fn state(&self) -> &S {
+        &self.unexpanded_stream.s
     }
 
-    fn state_mut(&mut self) -> &mut SAS::State {
-        self.unexpanded_stream.state_and_stream.state_mut()
+    fn state_mut(&mut self) -> &mut S {
+        &mut self.unexpanded_stream.s
     }
 
     fn stream(&mut self) -> &mut dyn Stream {
@@ -141,6 +118,7 @@ where
             Some(token) => match token.value {
                 token::Value::Character(..) => None,
                 token::Value::ControlSequence(_, ref name) => {
+                    //println!("Considering command {}", name);
                     self.state().base().primitives.get(name)
                 }
             },

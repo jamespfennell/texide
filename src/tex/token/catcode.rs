@@ -94,7 +94,7 @@ pub enum RawCatCode {
 impl RawCatCode {
     pub fn int(&self) -> u8 {
         match self {
-            Regular(catCode) => catCode.int(),
+            Regular(cat_code) => cat_code.int(),
             Escape => 0,
             EndOfLine => 5,
             Ignored => 9,
@@ -124,7 +124,13 @@ pub fn or_default(c: Option<&RawCatCode>) -> RawCatCode {
 
 // TODO: the cat code wrapper should have nice insert ops for regular catcodes
 pub fn tex_defaults() -> ScopedMap<char, RawCatCode> {
-    ScopedMap::from_iter(std::array::IntoIter::new([
+    let mut cat_code_map = ScopedMap::new();
+    set_tex_defaults(&mut cat_code_map);
+    cat_code_map
+}
+
+pub fn set_tex_defaults(cat_code_map: &mut ScopedMap<char, RawCatCode>) {
+    cat_code_map.extend(std::array::IntoIter::new([
         ('\\', Escape),
         ('{', Regular(BeginGroup)),
         ('}', Regular(EndGroup)),

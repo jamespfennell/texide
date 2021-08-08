@@ -18,6 +18,7 @@ use crate::datastructures::scopedmap::ScopedMap;
 use crate::tex::error;
 use crate::tex::token::catcode::{CatCode, RawCatCode};
 use crate::tex::token::token;
+use std::fmt;
 use std::io;
 use std::iter::FromIterator;
 use std::rc::Rc;
@@ -32,6 +33,14 @@ pub enum LexerError {
     InvalidToken,
     IO(io::Error),
 }
+
+impl fmt::Display for LexerError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "LEXER ERROR")
+    }
+}
+
+impl std::error::Error for LexerError {}
 
 impl From<io::Error> for LexerError {
     fn from(io_error: std::io::Error) -> Self {

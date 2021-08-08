@@ -2,13 +2,13 @@
 use crate::tex::token::catcode::CatCode;
 use std::rc::Rc;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum Value {
     Character(char, CatCode),
     ControlSequence(char, String),
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Token {
     pub value: Value,
     pub source: Option<Source>,
