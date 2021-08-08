@@ -9,7 +9,6 @@ use crate::tex::token::stream::Stream;
 
 use crate::tex::primitive::Input;
 use crate::tex::state::TexState;
-use std::convert::TryFrom;
 
 pub trait StateAndStream {
     type State;

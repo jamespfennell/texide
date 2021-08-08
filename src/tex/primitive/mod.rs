@@ -1,12 +1,12 @@
 //! Texide primitives API and primitives library.
 
 use crate::datastructures::scopedmap::ScopedMap;
+use crate::tex::driver;
 use crate::tex::driver::StateAndStream;
 use crate::tex::state::{BaseState, TexState};
 use crate::tex::token::catcode::CatCode;
 use crate::tex::token::stream;
 use crate::tex::token::token;
-use crate::tex::{driver, state};
 use library::{conditional, texide};
 use std::rc;
 

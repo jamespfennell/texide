@@ -5,7 +5,6 @@ use crate::tex::primitive;
 use crate::tex::token::stream;
 
 use crate::tex::token::token;
-use std::any::Any;
 
 struct James {}
 
@@ -21,8 +20,6 @@ impl<State> primitive::ExpansionPrimitive<State> for James {
         ])))
     }
 }
-
-static JAMES: James = James {};
 
 pub fn get_texide<State>() -> impl primitive::ExpansionPrimitive<State> {
     return James {};

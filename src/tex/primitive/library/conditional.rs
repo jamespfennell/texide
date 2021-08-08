@@ -4,12 +4,11 @@ use crate::tex::primitive;
 
 use crate::tex::token::stream;
 
-use crate::tex::primitive::Primitive;
 use crate::tex::state::TexState;
-use crate::tex::token::token;
+
 use crate::tex::token::token::Value;
 use std::any;
-use std::any::{Any, TypeId};
+use std::any::TypeId;
 
 struct If;
 struct Else;
@@ -22,13 +21,13 @@ impl<S: TexState<S>> primitive::ExpansionPrimitive<S> for If {
                 if let Some(c) = input.state().get_expansion_primitive(&name) {
                     // TODO: switch on If, Else and Fi
                     if Some(any::TypeId::of::<Else>()) == c.id() {
-                        return Ok(Box::new(stream::VecStream::new(vec![])));
+                        return Ok(Box::new(stream::EmptyStream));
                     }
                 }
             }
         }
         // TODO: end of the stream, ran out, should return an unexpected end of input error
-        Ok(Box::new(stream::VecStream::new(vec![])))
+        Ok(Box::new(stream::EmptyStream))
     }
 }
 

@@ -131,6 +131,7 @@
 //! `prepare_imut_state`. This exception is on an per-implementation basis.
 
 use crate::tex::token::token;
+use crate::tex::token::token::Token;
 use std::convert::TryFrom;
 
 /// A `Stream` is a source of tokens that are possibly generated on demand.
@@ -159,7 +160,7 @@ pub trait Stream {
     /// Immutably peeks at the next token in the stream. The method `prepare_imut_peek`
     /// *must* be invoked before this function, otherwise an error will be returned.
     ///
-    /// Note that the name of this method is intentionally janky so that consumer think
+    /// The name of this method is intentionally janky so that consumers think
     /// twice before using it.
     fn imut_peek(&self) -> anyhow::Result<Option<&token::Token>>;
 
@@ -169,6 +170,69 @@ pub trait Stream {
     /// situations where a peek has already occurred, and the token itself is not needed.
     fn consume(&mut self) -> anyhow::Result<()> {
         self.next().map(|_| ())
+    }
+}
+
+/// An `EmptyStream` is a stream consisting of no elements.
+///
+/// The `EmptyStream` type can be helpful when implementing
+/// expansion primitives that may return no expanded tokens, for example
+/// conditional primitives.
+///
+/// ```
+/// # use texide::tex::token::stream::Stream;
+/// # use texide::tex::token::stream::EmptyStream;
+/// let mut s = EmptyStream;
+/// assert_eq!(s.peek().unwrap(), None);
+/// ```
+pub struct EmptyStream;
+
+impl Stream for EmptyStream {
+    fn next(&mut self) -> anyhow::Result<Option<token::Token>> {
+        Ok(None)
+    }
+
+    fn imut_peek(&self) -> anyhow::Result<Option<&token::Token>> {
+        Ok(None)
+    }
+}
+
+/// A `SingletonStream` is a stream consisting of exactly one element.
+///
+/// It is preferable to use
+/// this type for the (not uncommon) case when a single token is returned from an expansion
+/// primitive.
+///
+/// A `SingletonStream` may be peeked at immutably without invoking `prepare_imut_peek` first.
+///
+/// ```
+/// # use texide::tex::token::stream::Stream;
+/// # use texide::tex::token::stream::SingletonStream;
+/// # use texide::tex::token::token::{Token, Value};
+/// let t = Token::new_letter('a');
+/// let mut s = SingletonStream::new(t.clone());
+/// assert_eq!(s.imut_peek().unwrap(), Some(&t));
+/// assert_eq!(s.next().unwrap(), Some(t));
+/// assert_eq!(s.imut_peek().unwrap(), None);
+/// assert_eq!(s.next().unwrap(), None);
+/// ```
+pub struct SingletonStream {
+    t: Option<token::Token>,
+}
+
+impl SingletonStream {
+    pub fn new(t: token::Token) -> SingletonStream {
+        SingletonStream { t: Some(t) }
+    }
+}
+
+impl Stream for SingletonStream {
+    fn next(&mut self) -> anyhow::Result<Option<token::Token>> {
+        Ok(self.t.take())
+    }
+
+    fn imut_peek(&self) -> anyhow::Result<Option<&token::Token>> {
+        Ok(self.t.as_ref())
     }
 }
 
@@ -187,6 +251,7 @@ impl VecStream {
     }
 }
 
+// TODO: destroy
 /// This `TryFrom` trait implementation enables easy casting of any `Stream` to a `VecStream`.
 impl TryFrom<Box<dyn Stream>> for VecStream {
     type Error = anyhow::Error;

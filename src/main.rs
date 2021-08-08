@@ -19,7 +19,7 @@ pub fn run() -> Result<(), lexer::LexerError> {
 
 fn main() {
     primitive::expand();
-    run();
+    run().unwrap();
 
     /*
     let err = lexer::TokenError{

@@ -94,7 +94,7 @@ pub enum RawCatCode {
 impl RawCatCode {
     pub fn int(&self) -> u8 {
         match self {
-            Regular(catCode) => catCode.int(),
+            Regular(cat_code) => cat_code.int(),
             Escape => 0,
             EndOfLine => 5,
             Ignored => 9,
