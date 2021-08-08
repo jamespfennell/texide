@@ -1,7 +1,7 @@
 //! TeX execution driver.
 
 use crate::tex::primitive;
-use crate::tex::state;
+
 use crate::tex::token::stream;
 use crate::tex::token::token;
 

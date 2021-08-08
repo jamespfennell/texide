@@ -2,7 +2,7 @@ use crate::datastructures::scopedmap::ScopedMap;
 use crate::tex::input;
 use crate::tex::primitive;
 use crate::tex::primitive::Primitive;
-use crate::tex::token::stream;
+
 use std::rc::Rc;
 
 // TeXState is a trait that every state in Texide satisfies. It ensures that the state

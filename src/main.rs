@@ -1,13 +1,13 @@
 use std::env;
-use std::fs::File;
-use std::io::BufReader;
+
+
 use std::process;
 use texide::tex::driver;
-use texide::tex::primitive;
+
 use texide::tex::state;
 use texide::tex::state::TexState;
 use texide::tex::token::catcode;
-use texide::tex::token::lexer;
+
 
 fn main() {
     let args: Vec<String> = env::args().collect();
