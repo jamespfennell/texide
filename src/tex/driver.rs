@@ -10,7 +10,7 @@ use crate::tex::token::stream::Stream;
 use crate::tex::primitive::Input;
 use crate::tex::state::TexState;
 
-pub fn run<S: TexState<S>>(state: S) {
+pub fn run<S: TexState<S>>(state: S) -> anyhow::Result<()> {
     let mut input = ExpandedStream::<S> {
         unexpanded_stream: UnexpandedStream::<S> {
             s: state,
@@ -18,17 +18,15 @@ pub fn run<S: TexState<S>>(state: S) {
         },
     };
     loop {
-        match input.next() {
-            Ok(None) => break,
-            Ok(Some(token)) => {
+        match input.next()? {
+            None => break,
+            Some(token) => {
+                // TODO: this is where the execution code goes
                 println!("{:?}", token.value)
-            }
-            Err(_) => {
-                println!("ERROR");
-                break;
             }
         };
     }
+    Ok(())
 }
 
 // TODO: maybe a better name?

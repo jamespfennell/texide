@@ -26,23 +26,19 @@ fn main() {
     };
 }
 
+macro_rules! set_e {
+    ($state: expr, $name: expr, $p: expr) => {
+        &mut $state.set_expansion_primitive($name.to_string(), rc::Rc::new($p))
+    };
+}
+
 pub fn run(file_name: &str) -> Result<(), anyhow::Error> {
     let mut s = state::SimpleState::new();
-    s.set_expansion_primitive("if", rc::Rc::new(conditional::get_if()));
-    s.set_expansion_primitive("else", rc::Rc::new(conditional::get_else()));
+    set_e![s, "if", conditional::get_if()];
+    set_e![s, "else", conditional::get_else()];
     let input_module = &mut s.base_mut().input_module;
     catcode::set_tex_defaults(&mut input_module.cat_code_map);
     input_module.open_file(file_name)?;
-    driver::run(s);
-    /*
-    let f = BufReader::new(File::open(file_name)?);
-    // let mut reader = CharReader::new(f);
-    let mut lexer = lexer::Lexer::new(f);
-    let map = catcode::tex_defaults();
-
-    while let Some(t) = lexer.next(&map)? {
-        println!("Token: {:?}", t)
-    }
-    */
+    driver::run(s)?;
     Ok(())
 }
