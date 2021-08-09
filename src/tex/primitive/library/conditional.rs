@@ -1,7 +1,7 @@
 //! Conditional primitives
 
 use crate::tex::primitive;
-use crate::tex::primitive::ExpansionPrimitive;
+use crate::tex::primitive::ExpansionGeneric;
 
 use crate::tex::state::TexState;
 use crate::tex::token::stream;
@@ -29,7 +29,7 @@ fn IfF<S: TexState<S>>(input: &mut primitive::Input<S>) -> anyhow::Result<stream
     Ok(stream::VecStream::new_empty())
 }
 
-impl<S: TexState<S>> primitive::ExpansionPrimitive<S> for If {
+impl<S: TexState<S>> primitive::ExpansionGeneric<S> for If {
     fn call(&self, input: &mut primitive::Input<S>) -> anyhow::Result<stream::VecStream> {
         while let Some(token) = input.unexpanded_stream().next()? {
             if let Value::ControlSequence(_, name) = token.value {
@@ -46,7 +46,7 @@ impl<S: TexState<S>> primitive::ExpansionPrimitive<S> for If {
     }
 }
 
-impl<State> primitive::ExpansionPrimitive<State> for Else {
+impl<State> primitive::ExpansionGeneric<State> for Else {
     fn call(&self, _: &mut primitive::Input<State>) -> anyhow::Result<stream::VecStream> {
         Ok(stream::VecStream::new(vec![]))
     }
@@ -56,7 +56,7 @@ impl<State> primitive::ExpansionPrimitive<State> for Else {
     }
 }
 
-impl<State> primitive::ExpansionPrimitive<State> for Fi {
+impl<State> primitive::ExpansionGeneric<State> for Fi {
     fn call(&self, _: &mut primitive::Input<State>) -> anyhow::Result<stream::VecStream> {
         Ok(stream::VecStream::new(vec![]))
     }
@@ -73,10 +73,10 @@ pub fn get_if<S: TexState<S>>() -> primitive::ExpansionStatic<S> {
     //return If {};
 }
 
-pub fn get_else<State>() -> impl primitive::ExpansionPrimitive<State> {
+pub fn get_else<State>() -> impl primitive::ExpansionGeneric<State> {
     return Else {};
 }
 
-pub fn get_fi<State>() -> impl primitive::ExpansionPrimitive<State> {
+pub fn get_fi<State>() -> impl primitive::ExpansionGeneric<State> {
     return Fi {};
 }

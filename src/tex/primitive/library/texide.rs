@@ -8,7 +8,7 @@ use crate::tex::token::token;
 
 struct James {}
 
-impl<State> primitive::ExpansionPrimitive<State> for James {
+impl<State> primitive::ExpansionGeneric<State> for James {
     fn call(&self, _: &mut primitive::Input<State>) -> anyhow::Result<stream::VecStream> {
         Ok(stream::VecStream::new(vec![
             token::Token::new_letter('T'),
@@ -21,7 +21,7 @@ impl<State> primitive::ExpansionPrimitive<State> for James {
     }
 }
 
-pub fn get_texide<State>() -> impl primitive::ExpansionPrimitive<State> {
+pub fn get_texide<State>() -> impl primitive::ExpansionGeneric<State> {
     return James {};
 }
 

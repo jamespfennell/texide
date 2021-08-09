@@ -33,7 +33,7 @@ impl<S> ExpansionStatic<S> {
     }
 }
 
-impl<S: state::TexState<S>> ExpansionPrimitive<S> for ExpansionStatic<S> {
+impl<S: state::TexState<S>> ExpansionGeneric<S> for ExpansionStatic<S> {
     fn call(&self, input: &mut Input<S>) -> anyhow::Result<stream::VecStream> {
         (self.call_fn)(input)
     }
@@ -47,8 +47,7 @@ impl<S: state::TexState<S>> ExpansionPrimitive<S> for ExpansionStatic<S> {
     }
 }
 
-// TODO: rename ExpansionGeneric
-pub trait ExpansionPrimitive<S> {
+pub trait ExpansionGeneric<S> {
     fn call(&self, input: &mut Input<S>) -> anyhow::Result<stream::VecStream>;
 
     fn doc(&self) -> &str {
@@ -63,7 +62,7 @@ pub trait ExpansionPrimitive<S> {
 #[derive(Clone)]
 pub enum Expansion<S> {
     Static(ExpansionStatic<S>),
-    Generic(rc::Rc<dyn ExpansionPrimitive<S>>),
+    Generic(rc::Rc<dyn ExpansionGeneric<S>>),
 }
 
 impl<S> Expansion<S> {
@@ -75,25 +74,25 @@ impl<S> Expansion<S> {
     }
 }
 
-impl<S: TexState<S>> ExpansionPrimitive<S> for Expansion<S> {
+impl<S: TexState<S>> ExpansionGeneric<S> for Expansion<S> {
     fn call(&self, input: &mut Input<S>) -> anyhow::Result<stream::VecStream> {
         match self {
             Expansion::Static(e) => ExpansionStatic::call(e, input),
-            Expansion::Generic(e) => ExpansionPrimitive::call(e.as_ref(), input),
+            Expansion::Generic(e) => ExpansionGeneric::call(e.as_ref(), input),
         }
     }
 
     fn doc(&self) -> &str {
         match self {
             Expansion::Static(e) => ExpansionStatic::doc(e),
-            Expansion::Generic(e) => ExpansionPrimitive::doc(e.as_ref()),
+            Expansion::Generic(e) => ExpansionGeneric::doc(e.as_ref()),
         }
     }
 
     fn id(&self) -> Option<TypeId> {
         match self {
             Expansion::Static(e) => e.id,
-            Expansion::Generic(e) => ExpansionPrimitive::id(e.as_ref()),
+            Expansion::Generic(e) => ExpansionGeneric::id(e.as_ref()),
         }
     }
 }
