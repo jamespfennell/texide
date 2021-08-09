@@ -132,6 +132,7 @@
 
 use crate::tex::token::token;
 
+use crate::tex::token::token::Token;
 use std::convert::TryFrom;
 
 /// A `Stream` is a source of tokens that are possibly generated on demand.
@@ -272,5 +273,73 @@ impl Stream for VecStream {
 
     fn imut_peek(&self) -> anyhow::Result<Option<&token::Token>> {
         Ok(self.vec.last())
+    }
+}
+
+/// A StackStream is a stream consisting of a stack of other streams. The next token is read from
+/// the first stream in the stack that is still returning tokens.
+/// ```
+/// # use texide::tex::token::stream::StackStream;
+/// # use texide::tex::token::stream::Stream;
+/// # use texide::tex::token::stream::VecStream;
+/// # use texide::tex::token::token::Token;
+/// let token_1 = Token::new_letter('a');
+/// let stream_1 = VecStream::new(vec![token_1.clone()]);
+/// let token_2 = Token::new_letter('b');
+/// let stream_2 = VecStream::new(vec![token_2.clone()]);
+///
+/// let mut stack_stream = StackStream::new();
+/// stack_stream.push(stream_1);
+/// stack_stream.push(stream_2);
+///
+/// assert_eq!(stack_stream.next().unwrap(), Some(token_2));
+/// assert_eq!(stack_stream.next().unwrap(), Some(token_1));
+/// assert_eq!(stack_stream.next().unwrap(), None);
+/// ```
+pub struct StackStream<T: Stream> {
+    stack: Vec<T>,
+}
+
+impl<T: Stream> StackStream<T> {
+    /// Push a new stream onto the top of the stack.
+    pub fn push(&mut self, stream: T) {
+        self.stack.push(stream)
+    }
+
+    /// Create a new empty stack stream.
+    pub fn new() -> StackStream<T> {
+        return StackStream { stack: Vec::new() };
+    }
+}
+
+impl<T: Stream> Stream for StackStream<T> {
+    fn next(&mut self) -> anyhow::Result<Option<token::Token>> {
+        self.prepare_imut_peek()?;
+        match self.stack.last_mut() {
+            None => Ok(None),
+            Some(stream) => stream.next(),
+        }
+    }
+
+    fn prepare_imut_peek(&mut self) -> anyhow::Result<()> {
+        loop {
+            match self.stack.last_mut() {
+                None => return Ok(()),
+                Some(top) => match top.peek()? {
+                    None => {
+                        self.stack.pop();
+                        continue;
+                    }
+                    Some(..) => return Ok(()),
+                },
+            }
+        }
+    }
+
+    fn imut_peek(&self) -> anyhow::Result<Option<&token::Token>> {
+        match self.stack.last() {
+            None => Ok(None),
+            Some(stream) => stream.imut_peek(),
+        }
     }
 }

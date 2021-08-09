@@ -3,8 +3,6 @@ use crate::tex::input;
 use crate::tex::primitive;
 use crate::tex::primitive::Primitive;
 
-use std::rc::Rc;
-
 // TeXState is a trait that every state in Texide satisfies. It ensures that the state
 // can be used for perform expansion, handle macro processing, etc.
 //

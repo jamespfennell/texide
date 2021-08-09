@@ -8,9 +8,9 @@ use std::rc;
 pub mod library;
 
 use crate::tex::driver;
-use crate::tex::primitive::library::conditional::get_if;
+
 use crate::tex::state::TexState;
-use std::any::{Any, TypeId};
+use std::any::TypeId;
 
 pub use driver::ExpandedStream as Input;
 

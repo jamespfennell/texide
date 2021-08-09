@@ -2,7 +2,6 @@
 
 use crate::tex::primitive;
 use crate::tex::primitive::ExpansionPrimitive;
-use crate::tex::primitive::{Expansion, Input};
 use crate::tex::state::TexState;
 use crate::tex::token::stream;
 use crate::tex::token::stream::Stream;
