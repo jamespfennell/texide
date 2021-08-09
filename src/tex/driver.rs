@@ -1,15 +1,14 @@
 //! TeX execution driver.
 
 use crate::tex::primitive;
-
+use crate::tex::primitive::ExpansionPrimitive;
+use crate::tex::primitive::{Expansion, Input};
+use crate::tex::state::TexState;
 use crate::tex::token::stream;
+use crate::tex::token::stream::Stream;
 use crate::tex::token::token;
 
-use crate::tex::token::stream::Stream;
-
-use crate::tex::primitive::Input;
-use crate::tex::state::TexState;
-
+// TODO: accept a mutable reference to the state; we don't need to own it
 pub fn run<S: TexState<S>>(state: S) -> anyhow::Result<()> {
     let mut input = ExpandedStream::<S> {
         unexpanded_stream: UnexpandedStream::<S> {
@@ -124,7 +123,7 @@ impl<S: TexState<S>> primitive::Input<S> for ExpandedStream<S> {
             },
         };
         let command = match command {
-            Some(primitive::Primitive::Expansion(command)) => command.clone(),
+            Some(primitive::Primitive::Expansion(command)) => command.duplicate(),
             None => return Ok(false),
         };
         self.unexpanded_stream.consume()?;

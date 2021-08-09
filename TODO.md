@@ -1,10 +1,18 @@
-- Continue cleaning up and documenting what's written.
-
-- Write a full example of the driver.
+- Finish making the expansion primitive static vs dynamic
+- 
+- Make the VecStream specialized for singleton streams
+- Add an `is_empty` method to the stream trait
+- Have the primitive commands return a VecStream
+- Have the primitive commands accept a concrete type
+- Move the expansion logic to the input driver to handle multiple files
+  - Make a StackStream<T> type that we can use (1) for expansion and (2) for multiple input files
+- Document what's written.
 
 - Write the input module > reads multiple files at a time, contains the cat code map
     and can be a stream.
   
 - Write the `texide tokenize` and `texide expand` command tools.
+  - We can make the expand command smart vis-a-vis new lines
+
 
 - Transcribe the Go implementation of macros to here.
