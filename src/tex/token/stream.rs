@@ -132,7 +132,8 @@
 
 use crate::tex::token::token;
 
-use std::convert::TryFrom;
+
+
 
 /// A `Stream` is a source of tokens that are possibly generated on demand.
 ///
@@ -173,104 +174,133 @@ pub trait Stream {
     }
 }
 
-/// An `EmptyStream` is a stream consisting of no elements.
-///
-/// The `EmptyStream` type can be helpful when implementing
-/// expansion primitives that may return no expanded tokens, for example
-/// conditional primitives.
-///
-/// ```
-/// # use texide::tex::token::stream::Stream;
-/// # use texide::tex::token::stream::EmptyStream;
-/// let mut s = EmptyStream;
-/// assert_eq!(s.peek().unwrap(), None);
-/// ```
-pub struct EmptyStream;
-
-impl Stream for EmptyStream {
-    fn next(&mut self) -> anyhow::Result<Option<token::Token>> {
-        Ok(None)
-    }
-
-    fn imut_peek(&self) -> anyhow::Result<Option<&token::Token>> {
-        Ok(None)
-    }
-}
-
-/// A `SingletonStream` is a stream consisting of exactly one element.
-///
-/// It is preferable to use
-/// this type for the (not uncommon) case when a single token is returned from an expansion
-/// primitive.
-///
-/// A `SingletonStream` may be peeked at immutably without invoking `prepare_imut_peek` first.
-///
-/// ```
-/// # use texide::tex::token::stream::Stream;
-/// # use texide::tex::token::stream::SingletonStream;
-/// # use texide::tex::token::token::{Token, Value};
-/// let t = Token::new_letter('a');
-/// let mut s = SingletonStream::new(t.clone());
-/// assert_eq!(s.imut_peek().unwrap(), Some(&t));
-/// assert_eq!(s.next().unwrap(), Some(t));
-/// assert_eq!(s.imut_peek().unwrap(), None);
-/// assert_eq!(s.next().unwrap(), None);
-/// ```
-pub struct SingletonStream {
-    t: Option<token::Token>,
-}
-
-impl SingletonStream {
-    pub fn new(t: token::Token) -> SingletonStream {
-        SingletonStream { t: Some(t) }
-    }
-}
-
-impl Stream for SingletonStream {
-    fn next(&mut self) -> anyhow::Result<Option<token::Token>> {
-        Ok(self.t.take())
-    }
-
-    fn imut_peek(&self) -> anyhow::Result<Option<&token::Token>> {
-        Ok(self.t.as_ref())
-    }
-}
-
 /// A `VecStream` is a stream consisting of a vector of tokens that are returned in order.
 ///
+/// The implementation is optimized for empty streams and streams with a single token: these will
+/// be stored entirely on the stack and will not incur a heap allocation.
+///
 /// A `VecStream` may be peeked at immutably without invoking `prepare_imut_peek` first.
-pub struct VecStream {
-    vec: Vec<token::Token>,
+pub enum VecStream {
+    Singleton(Option<token::Token>),
+    Vector(Vec<token::Token>),
 }
 
 impl VecStream {
     /// Returns a new `VecStream` consisting of the tokens in the provided vector.
     pub fn new(mut vec: Vec<token::Token>) -> VecStream {
         vec.reverse();
-        VecStream { vec }
+        VecStream::Vector(vec)
     }
-}
 
-// TODO: destroy
-/// This `TryFrom` trait implementation enables easy casting of any `Stream` to a `VecStream`.
-impl TryFrom<Box<dyn Stream>> for VecStream {
-    type Error = anyhow::Error;
+    /// Returns a new `VecStream` that is empty.
+    /// ```
+    /// # use texide::tex::token::stream::Stream;
+    /// # use texide::tex::token::stream::VecStream;
+    /// let mut s = VecStream::new_empty();
+    /// assert_eq!(s.peek().unwrap(), None);
+    /// ```
+    pub fn new_empty() -> VecStream {
+        VecStream::Singleton(None)
+    }
 
-    fn try_from(mut value: Box<dyn Stream>) -> Result<Self, Self::Error> {
-        let mut tokens = Vec::new();
-        while let Some(token) = value.next()? {
-            tokens.push(token);
-        }
-        Ok(VecStream::new(tokens))
+    /// Returns a new `VecStream` consisting of a single token. This stream will be stored entirely
+    /// on the stack.
+    /// ```
+    /// # use texide::tex::token::stream::Stream;
+    /// # use texide::tex::token::stream::VecStream;
+    /// # use texide::tex::token::token::{Token, Value};
+    /// let t = Token::new_letter('a');
+    /// let mut s = VecStream::new_singleton(t.clone());
+    /// assert_eq!(s.imut_peek().unwrap(), Some(&t));
+    /// assert_eq!(s.next().unwrap(), Some(t));
+    /// assert_eq!(s.imut_peek().unwrap(), None);
+    /// assert_eq!(s.next().unwrap(), None);
+    /// ```
+    pub fn new_singleton(t: token::Token) -> VecStream {
+        VecStream::Singleton(Some(t))
     }
 }
 
 impl Stream for VecStream {
     fn next(&mut self) -> anyhow::Result<Option<token::Token>> {
-        Ok(self.vec.pop())
+        Ok(match self {
+            VecStream::Singleton(t) => t.take(),
+            VecStream::Vector(v) => v.pop(),
+        })
     }
 
     fn imut_peek(&self) -> anyhow::Result<Option<&token::Token>> {
-        Ok(self.vec.last())
+        Ok(match self {
+            VecStream::Singleton(t) => t.as_ref(),
+            VecStream::Vector(v) => v.last(),
+        })
+    }
+}
+
+/// A StackStream is a stream consisting of a stack of other streams. The next token is read from
+/// the first stream in the stack that is still returning tokens.
+/// ```
+/// # use texide::tex::token::stream::StackStream;
+/// # use texide::tex::token::stream::Stream;
+/// # use texide::tex::token::stream::VecStream;
+/// # use texide::tex::token::token::Token;
+/// let token_1 = Token::new_letter('a');
+/// let stream_1 = VecStream::new(vec![token_1.clone()]);
+/// let token_2 = Token::new_letter('b');
+/// let stream_2 = VecStream::new(vec![token_2.clone()]);
+///
+/// let mut stack_stream = StackStream::new();
+/// stack_stream.push(stream_1);
+/// stack_stream.push(stream_2);
+///
+/// assert_eq!(stack_stream.next().unwrap(), Some(token_2));
+/// assert_eq!(stack_stream.next().unwrap(), Some(token_1));
+/// assert_eq!(stack_stream.next().unwrap(), None);
+/// ```
+pub struct StackStream<T: Stream> {
+    stack: Vec<T>,
+}
+
+impl<T: Stream> StackStream<T> {
+    /// Push a new stream onto the top of the stack.
+    pub fn push(&mut self, stream: T) {
+        self.stack.push(stream)
+    }
+
+    /// Create a new empty stack stream.
+    pub fn new() -> StackStream<T> {
+        return StackStream { stack: Vec::new() };
+    }
+}
+
+impl<T: Stream> Stream for StackStream<T> {
+    fn next(&mut self) -> anyhow::Result<Option<token::Token>> {
+        self.prepare_imut_peek()?;
+        match self.stack.last_mut() {
+            None => Ok(None),
+            Some(stream) => stream.next(),
+        }
+    }
+
+    fn prepare_imut_peek(&mut self) -> anyhow::Result<()> {
+        loop {
+            match self.stack.last_mut() {
+                None => return Ok(()),
+                Some(top) => match top.peek()? {
+                    None => {
+                        self.stack.pop();
+                        continue;
+                    }
+                    Some(..) => return Ok(()),
+                },
+            }
+        }
+    }
+
+    fn imut_peek(&self) -> anyhow::Result<Option<&token::Token>> {
+        match self.stack.last() {
+            None => Ok(None),
+            Some(stream) => stream.imut_peek(),
+        }
     }
 }

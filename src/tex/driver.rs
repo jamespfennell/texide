@@ -1,16 +1,14 @@
 //! TeX execution driver.
 
 use crate::tex::primitive;
-
+use crate::tex::primitive::ExpansionGeneric;
+use crate::tex::state::TexState;
 use crate::tex::token::stream;
+use crate::tex::token::stream::{Stream};
 use crate::tex::token::token;
 
-use crate::tex::token::stream::Stream;
-
-use crate::tex::primitive::Input;
-use crate::tex::state::TexState;
-
-pub fn run<S: TexState<S>>(state: S) -> anyhow::Result<()> {
+// TODO: accept a mutable reference to the state; we don't need to own it
+pub fn run<S: TexState<S>>(state: S) -> anyhow::Result<S> {
     let mut input = ExpandedStream::<S> {
         unexpanded_stream: UnexpandedStream::<S> {
             s: state,
@@ -26,13 +24,13 @@ pub fn run<S: TexState<S>>(state: S) -> anyhow::Result<()> {
             }
         };
     }
-    Ok(())
+    Ok(input.unexpanded_stream.s)
 }
 
 // TODO: maybe a better name?
 struct UnexpandedStream<S> {
     s: S,
-    stack: Vec<Box<dyn stream::Stream>>,
+    stack: Vec<stream::VecStream>,
 }
 
 impl<S: TexState<S>> stream::Stream for UnexpandedStream<S> {
@@ -67,14 +65,8 @@ impl<S: TexState<S>> stream::Stream for UnexpandedStream<S> {
     }
 }
 
-// TODO: THIS IS WIERD
-// Seems like we shouldn't need a second struct to do what we want
-// Maybe unexpanded_stream should return a transient struct instead
-//
-// struct DriverShimThing<S, 'a> {
-//    unexpanded_stream<'a>: &mut UnexpandedStream
-// }
-struct ExpandedStream<S> {
+// TODO: Rename ExpandedInput
+pub struct ExpandedStream<S> {
     unexpanded_stream: UnexpandedStream<S>,
 }
 
@@ -94,24 +86,24 @@ impl<S: TexState<S>> stream::Stream for ExpandedStream<S> {
     }
 }
 
-impl<S: TexState<S>> primitive::Input<S> for ExpandedStream<S> {
-    fn state(&self) -> &S {
+impl<S: TexState<S>> ExpandedStream<S> {
+    pub fn state(&self) -> &S {
         &self.unexpanded_stream.s
     }
 
-    fn state_mut(&mut self) -> &mut S {
+    pub fn state_mut(&mut self) -> &mut S {
         &mut self.unexpanded_stream.s
     }
 
-    fn stream(&mut self) -> &mut dyn Stream {
+    pub fn stream(&mut self) -> &mut dyn Stream {
         self
     }
 
-    fn unexpanded_stream(&mut self) -> &mut dyn Stream {
+    pub fn unexpanded_stream(&mut self) -> &mut dyn Stream {
         &mut self.unexpanded_stream
     }
 
-    fn expand_next(&mut self) -> anyhow::Result<bool> {
+    pub fn expand_next(&mut self) -> anyhow::Result<bool> {
         self.unexpanded_stream.prepare_imut_peek()?;
         let command = match self.unexpanded_stream.imut_peek()? {
             None => None,
@@ -124,7 +116,7 @@ impl<S: TexState<S>> primitive::Input<S> for ExpandedStream<S> {
             },
         };
         let command = match command {
-            Some(primitive::Primitive::Expansion(command)) => command.clone(),
+            Some(primitive::Primitive::Expansion(command)) => command.duplicate(),
             None => return Ok(false),
         };
         self.unexpanded_stream.consume()?;

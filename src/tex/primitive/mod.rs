@@ -1,45 +1,104 @@
 //! Texide primitives API and primitives library.
 
+use crate::tex::state;
 use crate::tex::token::stream;
 
 use std::rc;
 
 pub mod library;
 
-use std::any::{Any, TypeId};
+use crate::tex::driver;
 
-// TODO (?): replace this trait with the concrete type
-// pub use Input<State> as tex::driver::...
-pub trait Input<State> {
-    /// Returns an immutable reference to the underlying state.
-    fn state(&self) -> &State;
+use crate::tex::state::TexState;
+use std::any::TypeId;
 
-    /// Returns a mutable reference to the underlying state.
-    fn state_mut(&mut self) -> &mut State;
+pub use driver::ExpandedStream as Input;
 
-    /// Returns a stream that is the input stream but with expansion performed.
-    fn stream(&mut self) -> &mut dyn stream::Stream;
-
-    /// Returns the unexpanded input stream.
-    fn unexpanded_stream(&mut self) -> &mut dyn stream::Stream;
-
-    /// Expand the next token in the input stream, if it is an expansion command.
-    /// Returns true iff expansion occurred.
-    fn expand_next(&mut self) -> anyhow::Result<bool>;
+// TODO: default clone implementation does not seem to work
+#[derive(Copy, Clone)]
+pub struct ExpansionStatic<S> {
+    call_fn: fn(input: &mut Input<S>) -> anyhow::Result<stream::VecStream>,
+    docs: &'static str,
+    id: Option<TypeId>,
 }
 
-// TODO: rename expansion
-pub trait ExpansionPrimitive<State>: Any {
-    fn call(&self, input: &mut dyn Input<State>) -> anyhow::Result<Box<dyn stream::Stream>>;
-    // TODO: add docs
+impl<S> ExpansionStatic<S> {
+    // TODO: why doesn't clone work
+    pub fn duplicate(&self) -> ExpansionStatic<S> {
+        ExpansionStatic {
+            call_fn: self.call_fn,
+            docs: self.docs,
+            id: self.id,
+        }
+    }
+}
+
+impl<S: state::TexState<S>> ExpansionGeneric<S> for ExpansionStatic<S> {
+    fn call(&self, input: &mut Input<S>) -> anyhow::Result<stream::VecStream> {
+        (self.call_fn)(input)
+    }
+
+    fn doc(&self) -> &str {
+        self.docs
+    }
+
+    fn id(&self) -> Option<TypeId> {
+        return self.id;
+    }
+}
+
+pub trait ExpansionGeneric<S> {
+    fn call(&self, input: &mut Input<S>) -> anyhow::Result<stream::VecStream>;
+
+    fn doc(&self) -> &str {
+        "this command has no documentation"
+    }
 
     fn id(&self) -> Option<TypeId> {
         None
     }
 }
 
-pub enum Primitive<State> {
-    Expansion(rc::Rc<dyn ExpansionPrimitive<State>>),
+#[derive(Clone)]
+pub enum Expansion<S> {
+    Static(ExpansionStatic<S>),
+    Generic(rc::Rc<dyn ExpansionGeneric<S>>),
+}
+
+impl<S> Expansion<S> {
+    pub fn duplicate(&self) -> Expansion<S> {
+        match self {
+            Expansion::Generic(g) => Expansion::Generic(g.clone()),
+            Expansion::Static(s) => Expansion::Static(s.duplicate()),
+        }
+    }
+}
+
+impl<S: TexState<S>> ExpansionGeneric<S> for Expansion<S> {
+    fn call(&self, input: &mut Input<S>) -> anyhow::Result<stream::VecStream> {
+        match self {
+            Expansion::Static(e) => ExpansionStatic::call(e, input),
+            Expansion::Generic(e) => ExpansionGeneric::call(e.as_ref(), input),
+        }
+    }
+
+    fn doc(&self) -> &str {
+        match self {
+            Expansion::Static(e) => ExpansionStatic::doc(e),
+            Expansion::Generic(e) => ExpansionGeneric::doc(e.as_ref()),
+        }
+    }
+
+    fn id(&self) -> Option<TypeId> {
+        match self {
+            Expansion::Static(e) => e.id,
+            Expansion::Generic(e) => ExpansionGeneric::id(e.as_ref()),
+        }
+    }
+}
+
+pub enum Primitive<S> {
+    Expansion(Expansion<S>),
 }
 
 /*
