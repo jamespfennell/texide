@@ -132,8 +132,8 @@
 
 use crate::tex::token::token;
 
-use crate::tex::token::token::Token;
-use std::convert::TryFrom;
+
+
 
 /// A `Stream` is a source of tokens that are possibly generated on demand.
 ///

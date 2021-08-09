@@ -4,7 +4,7 @@ use crate::tex::primitive;
 use crate::tex::primitive::ExpansionGeneric;
 use crate::tex::state::TexState;
 use crate::tex::token::stream;
-use crate::tex::token::stream::{Stream, VecStream};
+use crate::tex::token::stream::{Stream};
 use crate::tex::token::token;
 
 // TODO: accept a mutable reference to the state; we don't need to own it
