@@ -174,69 +174,6 @@ pub trait Stream {
     }
 }
 
-/// An `EmptyStream` is a stream consisting of no elements.
-///
-/// The `EmptyStream` type can be helpful when implementing
-/// expansion primitives that may return no expanded tokens, for example
-/// conditional primitives.
-///
-/// ```
-/// # use texide::tex::token::stream::Stream;
-/// # use texide::tex::token::stream::EmptyStream;
-/// let mut s = EmptyStream;
-/// assert_eq!(s.peek().unwrap(), None);
-/// ```
-pub struct EmptyStream;
-
-impl Stream for EmptyStream {
-    fn next(&mut self) -> anyhow::Result<Option<token::Token>> {
-        Ok(None)
-    }
-
-    fn imut_peek(&self) -> anyhow::Result<Option<&token::Token>> {
-        Ok(None)
-    }
-}
-
-/// A `SingletonStream` is a stream consisting of exactly one element.
-///
-/// It is preferable to use
-/// this type for the (not uncommon) case when a single token is returned from an expansion
-/// primitive.
-///
-/// A `SingletonStream` may be peeked at immutably without invoking `prepare_imut_peek` first.
-///
-/// ```
-/// # use texide::tex::token::stream::Stream;
-/// # use texide::tex::token::stream::SingletonStream;
-/// # use texide::tex::token::token::{Token, Value};
-/// let t = Token::new_letter('a');
-/// let mut s = SingletonStream::new(t.clone());
-/// assert_eq!(s.imut_peek().unwrap(), Some(&t));
-/// assert_eq!(s.next().unwrap(), Some(t));
-/// assert_eq!(s.imut_peek().unwrap(), None);
-/// assert_eq!(s.next().unwrap(), None);
-/// ```
-pub struct SingletonStream {
-    t: Option<token::Token>,
-}
-
-impl SingletonStream {
-    pub fn new(t: token::Token) -> SingletonStream {
-        SingletonStream { t: Some(t) }
-    }
-}
-
-impl Stream for SingletonStream {
-    fn next(&mut self) -> anyhow::Result<Option<token::Token>> {
-        Ok(self.t.take())
-    }
-
-    fn imut_peek(&self) -> anyhow::Result<Option<&token::Token>> {
-        Ok(self.t.as_ref())
-    }
-}
-
 /// A `VecStream` is a stream consisting of a vector of tokens that are returned in order.
 ///
 /// The implementation is optimized for empty streams and streams with a single token: these will

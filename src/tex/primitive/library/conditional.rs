@@ -20,13 +20,13 @@ fn IfF<S: TexState<S>>(input: &mut primitive::Input<S>) -> anyhow::Result<Box<dy
             if let Some(c) = input.state().get_expansion_primitive(&name) {
                 // TODO: switch on If, Else and Fi
                 if Some(any::TypeId::of::<Else>()) == c.id() {
-                    return Ok(Box::new(stream::EmptyStream));
+                    return Ok(Box::new(stream::VecStream::new_empty()));
                 }
             }
         }
     }
     // TODO: end of the stream, ran out, should return an unexpected end of input error
-    Ok(Box::new(stream::EmptyStream))
+    Ok(Box::new(stream::VecStream::new_empty()))
 }
 
 impl<S: TexState<S>> primitive::ExpansionPrimitive<S> for If {
@@ -36,13 +36,13 @@ impl<S: TexState<S>> primitive::ExpansionPrimitive<S> for If {
                 if let Some(c) = input.state().get_expansion_primitive(&name) {
                     // TODO: switch on If, Else and Fi
                     if Some(any::TypeId::of::<Else>()) == c.id() {
-                        return Ok(Box::new(stream::EmptyStream));
+                        return Ok(Box::new(stream::VecStream::new_empty()));
                     }
                 }
             }
         }
         // TODO: end of the stream, ran out, should return an unexpected end of input error
-        Ok(Box::new(stream::EmptyStream))
+        Ok(Box::new(stream::VecStream::new_empty()))
     }
 }
 
