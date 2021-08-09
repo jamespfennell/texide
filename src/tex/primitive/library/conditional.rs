@@ -14,41 +14,41 @@ struct If;
 struct Else;
 struct Fi;
 
-fn IfF<S: TexState<S>>(input: &mut primitive::Input<S>) -> anyhow::Result<Box<dyn stream::Stream>> {
+fn IfF<S: TexState<S>>(input: &mut primitive::Input<S>) -> anyhow::Result<stream::VecStream> {
     while let Some(token) = input.unexpanded_stream().next()? {
         if let Value::ControlSequence(_, name) = token.value {
             if let Some(c) = input.state().get_expansion_primitive(&name) {
                 // TODO: switch on If, Else and Fi
                 if Some(any::TypeId::of::<Else>()) == c.id() {
-                    return Ok(Box::new(stream::VecStream::new_empty()));
+                    return Ok(stream::VecStream::new_empty());
                 }
             }
         }
     }
     // TODO: end of the stream, ran out, should return an unexpected end of input error
-    Ok(Box::new(stream::VecStream::new_empty()))
+    Ok(stream::VecStream::new_empty())
 }
 
 impl<S: TexState<S>> primitive::ExpansionPrimitive<S> for If {
-    fn call(&self, input: &mut primitive::Input<S>) -> anyhow::Result<Box<dyn stream::Stream>> {
+    fn call(&self, input: &mut primitive::Input<S>) -> anyhow::Result<stream::VecStream> {
         while let Some(token) = input.unexpanded_stream().next()? {
             if let Value::ControlSequence(_, name) = token.value {
                 if let Some(c) = input.state().get_expansion_primitive(&name) {
                     // TODO: switch on If, Else and Fi
                     if Some(any::TypeId::of::<Else>()) == c.id() {
-                        return Ok(Box::new(stream::VecStream::new_empty()));
+                        return Ok(stream::VecStream::new_empty());
                     }
                 }
             }
         }
         // TODO: end of the stream, ran out, should return an unexpected end of input error
-        Ok(Box::new(stream::VecStream::new_empty()))
+        Ok(stream::VecStream::new_empty())
     }
 }
 
 impl<State> primitive::ExpansionPrimitive<State> for Else {
-    fn call(&self, _: &mut primitive::Input<State>) -> anyhow::Result<Box<dyn stream::Stream>> {
-        Ok(Box::new(stream::VecStream::new(vec![])))
+    fn call(&self, _: &mut primitive::Input<State>) -> anyhow::Result<stream::VecStream> {
+        Ok(stream::VecStream::new(vec![]))
     }
 
     fn id(&self) -> Option<TypeId> {
@@ -57,8 +57,8 @@ impl<State> primitive::ExpansionPrimitive<State> for Else {
 }
 
 impl<State> primitive::ExpansionPrimitive<State> for Fi {
-    fn call(&self, _: &mut primitive::Input<State>) -> anyhow::Result<Box<dyn stream::Stream>> {
-        Ok(Box::new(stream::VecStream::new(vec![])))
+    fn call(&self, _: &mut primitive::Input<State>) -> anyhow::Result<stream::VecStream> {
+        Ok(stream::VecStream::new(vec![]))
     }
 }
 

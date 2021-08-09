@@ -17,7 +17,7 @@ pub use driver::ExpandedStream as Input;
 // TODO: default clone implementation does not seem to work
 #[derive(Copy, Clone)]
 pub struct ExpansionStatic<S> {
-    call_fn: fn(input: &mut Input<S>) -> anyhow::Result<Box<dyn stream::Stream>>,
+    call_fn: fn(input: &mut Input<S>) -> anyhow::Result<stream::VecStream>,
     docs: &'static str,
     id: Option<TypeId>,
 }
@@ -34,7 +34,7 @@ impl<S> ExpansionStatic<S> {
 }
 
 impl<S: state::TexState<S>> ExpansionPrimitive<S> for ExpansionStatic<S> {
-    fn call(&self, input: &mut Input<S>) -> anyhow::Result<Box<dyn stream::Stream>> {
+    fn call(&self, input: &mut Input<S>) -> anyhow::Result<stream::VecStream> {
         (self.call_fn)(input)
     }
 
@@ -49,7 +49,7 @@ impl<S: state::TexState<S>> ExpansionPrimitive<S> for ExpansionStatic<S> {
 
 // TODO: rename ExpansionGeneric
 pub trait ExpansionPrimitive<S> {
-    fn call(&self, input: &mut Input<S>) -> anyhow::Result<Box<dyn stream::Stream>>;
+    fn call(&self, input: &mut Input<S>) -> anyhow::Result<stream::VecStream>;
 
     fn doc(&self) -> &str {
         "this command has no documentation"
@@ -76,7 +76,7 @@ impl<S> Expansion<S> {
 }
 
 impl<S: TexState<S>> ExpansionPrimitive<S> for Expansion<S> {
-    fn call(&self, input: &mut Input<S>) -> anyhow::Result<Box<dyn stream::Stream>> {
+    fn call(&self, input: &mut Input<S>) -> anyhow::Result<stream::VecStream> {
         match self {
             Expansion::Static(e) => ExpansionStatic::call(e, input),
             Expansion::Generic(e) => ExpansionPrimitive::call(e.as_ref(), input),

@@ -4,7 +4,7 @@ use crate::tex::primitive;
 use crate::tex::primitive::ExpansionPrimitive;
 use crate::tex::state::TexState;
 use crate::tex::token::stream;
-use crate::tex::token::stream::Stream;
+use crate::tex::token::stream::{Stream, VecStream};
 use crate::tex::token::token;
 
 // TODO: accept a mutable reference to the state; we don't need to own it
@@ -30,7 +30,7 @@ pub fn run<S: TexState<S>>(state: S) -> anyhow::Result<S> {
 // TODO: maybe a better name?
 struct UnexpandedStream<S> {
     s: S,
-    stack: Vec<Box<dyn stream::Stream>>,
+    stack: Vec<stream::VecStream>,
 }
 
 impl<S: TexState<S>> stream::Stream for UnexpandedStream<S> {
