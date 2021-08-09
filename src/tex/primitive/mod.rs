@@ -7,41 +7,23 @@ use std::rc;
 
 pub mod library;
 
+use crate::tex::driver;
 use crate::tex::primitive::library::conditional::get_if;
 use crate::tex::state::TexState;
 use std::any::{Any, TypeId};
 
-// TODO (?): replace this trait with the concrete type Yesss
-// pub use Input<State> as tex::driver::...
-pub trait Input<State> {
-    /// Returns an immutable reference to the underlying state.
-    fn state(&self) -> &State;
-
-    /// Returns a mutable reference to the underlying state.
-    fn state_mut(&mut self) -> &mut State;
-
-    /// Returns a stream that is the input stream but with expansion performed.
-    fn stream(&mut self) -> &mut dyn stream::Stream;
-
-    /// Returns the unexpanded input stream.
-    fn unexpanded_stream(&mut self) -> &mut dyn stream::Stream;
-
-    /// Expand the next token in the input stream, if it is an expansion command.
-    /// Returns true iff expansion occurred.
-    fn expand_next(&mut self) -> anyhow::Result<bool>;
-}
+pub use driver::ExpandedStream as Input;
 
 // TODO: default clone implementation does not seem to work
-// TODO: what about requiring that this struct be static? Like, implementations be static?
-//  and then can pass by pointer
 #[derive(Copy, Clone)]
 pub struct ExpansionStatic<S> {
-    call_fn: fn(input: &mut dyn Input<S>) -> anyhow::Result<Box<dyn stream::Stream>>,
+    call_fn: fn(input: &mut Input<S>) -> anyhow::Result<Box<dyn stream::Stream>>,
     docs: &'static str,
     id: Option<TypeId>,
 }
 
 impl<S> ExpansionStatic<S> {
+    // TODO: why doesn't clone work
     pub fn duplicate(&self) -> ExpansionStatic<S> {
         ExpansionStatic {
             call_fn: self.call_fn,
@@ -52,7 +34,7 @@ impl<S> ExpansionStatic<S> {
 }
 
 impl<S: state::TexState<S>> ExpansionPrimitive<S> for ExpansionStatic<S> {
-    fn call(&self, input: &mut dyn Input<S>) -> anyhow::Result<Box<dyn stream::Stream>> {
+    fn call(&self, input: &mut Input<S>) -> anyhow::Result<Box<dyn stream::Stream>> {
         (self.call_fn)(input)
     }
 
@@ -67,7 +49,7 @@ impl<S: state::TexState<S>> ExpansionPrimitive<S> for ExpansionStatic<S> {
 
 // TODO: rename ExpansionGeneric
 pub trait ExpansionPrimitive<S> {
-    fn call(&self, input: &mut dyn Input<S>) -> anyhow::Result<Box<dyn stream::Stream>>;
+    fn call(&self, input: &mut Input<S>) -> anyhow::Result<Box<dyn stream::Stream>>;
 
     fn doc(&self) -> &str {
         "this command has no documentation"
@@ -94,7 +76,7 @@ impl<S> Expansion<S> {
 }
 
 impl<S: TexState<S>> ExpansionPrimitive<S> for Expansion<S> {
-    fn call(&self, input: &mut dyn Input<S>) -> anyhow::Result<Box<dyn stream::Stream>> {
+    fn call(&self, input: &mut Input<S>) -> anyhow::Result<Box<dyn stream::Stream>> {
         match self {
             Expansion::Static(e) => ExpansionStatic::call(e, input),
             Expansion::Generic(e) => ExpansionPrimitive::call(e.as_ref(), input),

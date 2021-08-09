@@ -9,7 +9,7 @@ use crate::tex::token::token;
 struct James {}
 
 impl<State> primitive::ExpansionPrimitive<State> for James {
-    fn call(&self, _: &mut dyn primitive::Input<State>) -> anyhow::Result<Box<dyn stream::Stream>> {
+    fn call(&self, _: &mut primitive::Input<State>) -> anyhow::Result<Box<dyn stream::Stream>> {
         Ok(Box::new(stream::VecStream::new(vec![
             token::Token::new_letter('T'),
             token::Token::new_letter('e'),
@@ -26,7 +26,7 @@ pub fn get_texide<State>() -> impl primitive::ExpansionPrimitive<State> {
 }
 
 pub fn texide_command<State>(
-    _: &mut dyn primitive::Input<State>,
+    _: &mut primitive::Input<State>,
 ) -> anyhow::Result<Box<dyn stream::Stream>> {
     Ok(Box::new(stream::VecStream::new(vec![
         token::Token::new_letter('T'),

@@ -14,9 +14,7 @@ struct If;
 struct Else;
 struct Fi;
 
-fn IfF<S: TexState<S>>(
-    input: &mut dyn primitive::Input<S>,
-) -> anyhow::Result<Box<dyn stream::Stream>> {
+fn IfF<S: TexState<S>>(input: &mut primitive::Input<S>) -> anyhow::Result<Box<dyn stream::Stream>> {
     while let Some(token) = input.unexpanded_stream().next()? {
         if let Value::ControlSequence(_, name) = token.value {
             if let Some(c) = input.state().get_expansion_primitive(&name) {
@@ -32,7 +30,7 @@ fn IfF<S: TexState<S>>(
 }
 
 impl<S: TexState<S>> primitive::ExpansionPrimitive<S> for If {
-    fn call(&self, input: &mut dyn primitive::Input<S>) -> anyhow::Result<Box<dyn stream::Stream>> {
+    fn call(&self, input: &mut primitive::Input<S>) -> anyhow::Result<Box<dyn stream::Stream>> {
         while let Some(token) = input.unexpanded_stream().next()? {
             if let Value::ControlSequence(_, name) = token.value {
                 if let Some(c) = input.state().get_expansion_primitive(&name) {
@@ -49,7 +47,7 @@ impl<S: TexState<S>> primitive::ExpansionPrimitive<S> for If {
 }
 
 impl<State> primitive::ExpansionPrimitive<State> for Else {
-    fn call(&self, _: &mut dyn primitive::Input<State>) -> anyhow::Result<Box<dyn stream::Stream>> {
+    fn call(&self, _: &mut primitive::Input<State>) -> anyhow::Result<Box<dyn stream::Stream>> {
         Ok(Box::new(stream::VecStream::new(vec![])))
     }
 
@@ -59,7 +57,7 @@ impl<State> primitive::ExpansionPrimitive<State> for Else {
 }
 
 impl<State> primitive::ExpansionPrimitive<State> for Fi {
-    fn call(&self, _: &mut dyn primitive::Input<State>) -> anyhow::Result<Box<dyn stream::Stream>> {
+    fn call(&self, _: &mut primitive::Input<State>) -> anyhow::Result<Box<dyn stream::Stream>> {
         Ok(Box::new(stream::VecStream::new(vec![])))
     }
 }
